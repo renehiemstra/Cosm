@@ -31,4 +31,23 @@ function Git.namefromgiturl(url)
     return string.sub(Cm.capturestdout("echo $(basename "..Base.esc(url)..")"), 1, -5)
 end
 
+--initialize git repository
+function Git.initrepo(root)
+    os.execute("cd "..root..";".. 
+        "git init"..";"..          
+        "git add ."..";"..         
+        "git commit -m \"First commit\"")
+end
+
+--add origin and push
+function Git.addremote(root, url)
+    if not Git.validemptygitrepo(url) then
+        error("Not a valid empty remote repository.")
+    end
+    os.execute(
+        "cd "..root.."; "..
+        "git remote add origin "..url..";"..
+        "git push -u origin main")
+end
+
 return Git

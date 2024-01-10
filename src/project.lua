@@ -11,13 +11,35 @@ function Proj.require(package)
   return require(package..".src."..package)
 end
 
+--check if table is a valid project table
+function Proj.isprojtable(table)
+  for k,v in ipairs{name="string", uuid="string", authors="string", version="string", deps="table"} do
+    if not Base.haskeyoftype(table, k, v) then
+      return false
+    end
+  end
+  return true
+end
+
 --check if the folder at `root` is a valid package
 function Proj.ispkg(root)
-  local pkgname = Cm.capturestdout("cd "..root.."; echo \"${PWD##*/}\"")
-  local c1 = Cm.isfile(root.."/Project.lua")
+  if not type(root)=="string" then
+    error("Provide a string as input.")
+  end
+  if not Cm.isdir(root) then
+    return false
+  end
+  if not Cm.isfile(root.."/Project.lua") then
+    return false
+  end
+  local pkgname = Cm.namedir(root)
   local c2 = Cm.isfile(root.."/src/"..pkgname..".lua")
   local c3 = Cm.isfile(root.."/src/"..pkgname..".t")
-  return c1 and (c2 or c3)
+  if not (c2 or c3) then
+    return false
+  end
+  local table = dofile(root.."/Project.lua")
+  return Proj.isprojtable(table)
 end
 
 --create a universal unique identifier (uuid)
@@ -73,12 +95,12 @@ end
 function Proj.clone(args)
   --check keyword arguments
   if args.root==nil or args.url==nil then
-    error("provide `root` and git `url`.\n")
+    error("Provide `root` and git `url`.\n")
   end
   if type(args.root)~="string" then
-      error("provide `root` folder.\n")
+      error("Provide `root` folder as a string.\n")
   elseif type(args.url)~="string" then
-      error("provide git `url`.\n")
+      error("Provide git `url` as a string.\n")
   end
 
   --throw an error if repo is not valid
@@ -100,21 +122,11 @@ function Proj.clone(args)
   end
 end
 
---check if table is a valid project table
-function Proj.isprojtable(table)
-  for k,v in ipairs{name="string", uuid="string", authors="string", version="string", deps="table"} do
-    if not Base.haskeyoftype(table, k, v) then
-      return false
-    end
-  end
-  return true
-end
-
 --generate package folders
-local function genpkgfolders(pkgname)
-  os.execute("mkdir "..pkgname) --package root folder
-  os.execute("mkdir "..pkgname.."/src") --package source folder
-  os.execute("mkdir "..pkgname.."/.pkg") --package managing folder
+local function genpkgdirs(pkgname)
+  Cm.mkdir(pkgname) --package root folder
+  Cm.mkdir(pkgname.."/src") --package source folder
+  Cm.mkdir(pkgname.."/.pkg") --package managing folder
 end
 
 --generate main source file
@@ -145,20 +157,12 @@ local function genprojfile(pkgname)
   file:close()
 end
 
---initialize git repository
-local function initgitrepo(pkgname)
-  os.execute("cd "..pkgname..";".. 
-      "git init"..";"..          
-      "git add ."..";"..         
-      "git commit -m \"Initialized terra package\"")
-end
-
 --create a terra pkg template
 function Proj.create(pkgname)
-  genpkgfolders(pkgname)
+  genpkgdirs(pkgname)
   gensrcfile(pkgname)
   genprojfile(pkgname)
-  initgitrepo(pkgname)
+  Git.initrepo(pkgname)
 end
 
 return Proj

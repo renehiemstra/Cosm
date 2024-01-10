@@ -13,8 +13,8 @@ end
 
 function testPkgCreate()
     Proj.create("MyPackage")
-    lu.assertTrue(Proj.ispkg("./MyPackage"))
-    os.execute("rm -rf ./MyPackage")
+    lu.assertTrue(Proj.ispkg("MyPackage"))
+    os.execute("rm -rf MyPackage")
 end
 
 function testReadWriteProjfile()
@@ -33,4 +33,5 @@ function testPkgClone()
   lu.assertTrue(status)
   os.execute("rm -rf tmp")
 end
+
 -- lu.LuaUnit.run()

@@ -13,10 +13,23 @@ function testIsFile()
     lu.assertFalse(Cm.isfile("src/invalid.lua"))
 end
 
-function testIsFolder()
-    lu.assertTrue(Cm.isfolder("."))
-    lu.assertTrue(Cm.isfolder("src"))
-    lu.assertTrue(Cm.isfolder("test"))
-    lu.assertFalse(Cm.isfolder("invalid"))
+function testIsDir()
+    lu.assertTrue(Cm.isdir("."))
+    lu.assertTrue(Cm.isdir("src"))
+    lu.assertTrue(Cm.isdir("test"))
+    lu.assertFalse(Cm.isdir("invalid"))
 end
+
+function testWorkDir()
+    local depotpath = Cm.capturestdout("echo $TERRA_PKG_ROOT")
+    lu.assertEquals(Cm.currentworkdir(), depotpath.."/dev/Pkg")
+    lu.assertEquals(Cm.namedir("."), "Pkg")
+end
+
+function testMkDir()
+    Cm.mkdir("tmp")
+    lu.assertTrue(Cm.isdir("tmp"))
+    os.execute("rm -rf tmp")
+end
+
 -- lu.LuaUnit.run()
