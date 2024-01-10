@@ -94,7 +94,7 @@ function Proj.clone(args)
   local pkgname = Git.namefromgiturl(args.url)          
   if not Proj.ispkg(args.root.."/"..pkgname) then
       --remove terra cloned repo 
-      --os.execute("cd "..args.root..";".."rm -rf "..pkgname)
+      os.execute("cd "..args.root..";".."rm -rf "..pkgname)
       --throw error
       error("Cloned repository does not follow the specifications of a terra pkg.\n")
   end

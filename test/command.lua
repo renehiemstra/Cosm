@@ -1,4 +1,4 @@
-local lu = require("luaunit")
+local lu = require "luaunit"
 local Cm = require "src.command"
 
 function testGetFileExtension()
@@ -19,5 +19,4 @@ function testIsFolder()
     lu.assertTrue(Cm.isfolder("test"))
     lu.assertFalse(Cm.isfolder("invalid"))
 end
-
-os.exit( lu.LuaUnit.run() )
+-- lu.LuaUnit.run()

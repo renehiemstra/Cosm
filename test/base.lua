@@ -1,5 +1,5 @@
-lu = require("luaunit")
-Base = require "src.base"
+local lu = require "luaunit"
+local Base = require "src.base"
 
 function testHaskey()
     local table = {a = 1, b = "hi"}
@@ -8,5 +8,4 @@ function testHaskey()
     lu.assertFalse(Base.haskeyoftype(table, "c", "number"))
     lu.assertFalse(Base.haskeyoftype(table, "b", "number"))
 end
-
-os.exit( lu.LuaUnit.run() )
+-- lu.LuaUnit.run()

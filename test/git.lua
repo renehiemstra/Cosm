@@ -1,4 +1,4 @@
-local lu = require("luaunit")
+local lu = require "luaunit"
 local Git = require "src.git"
 
 function testNameFromGitUrl()
@@ -7,4 +7,17 @@ function testNameFromGitUrl()
   lu.assertEquals("MyPackage", Git.namefromgiturl("https://github.com/group/subgroup/MyPackage.git"))
 end
 
-os.exit( lu.LuaUnit.run() )
+function testValidGitRepo()
+
+  lu.assertTrue(Git.validgitrepo("git@github.com:terralang/terra.git"))
+  lu.assertFalse(Git.validgitrepo("git@github.com:terralang/terra.gi"))    
+
+  lu.assertTrue(Git.validemptygitrepo("git@github.com:renehiemstra/EmptyTestRepo.git"))
+  lu.assertFalse(Git.validemptygitrepo("git@github.com:renehiemstra/EmptyTestRepo.gi"))
+  lu.assertFalse(Git.validemptygitrepo("git@github.com:terralang/terra.git"))
+
+  lu.assertTrue(Git.validnonemptygitrepo("git@github.com:terralang/terra.git"))
+  lu.assertFalse(Git.validnonemptygitrepo("git@github.com:terralang/terra.gi"))
+  lu.assertFalse(Git.validnonemptygitrepo("git@github.com:renehiemstra/EmptyTestRepo.git"))
+end
+-- lu.LuaUnit.run()

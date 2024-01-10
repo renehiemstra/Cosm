@@ -1,8 +1,8 @@
-lu = require("luaunit")
+local lu = require "luaunit"
 
-Pkg = require "src.Pkg"
+require "test.base"
+require "test.command"
+require "test.git"
+require "test.project"
 
-
-
-
-os.exit( lu.LuaUnit.run() )
+lu.LuaUnit.run()

@@ -1,5 +1,5 @@
-lu = require("luaunit")
-Proj = require "src.project"
+local lu = require "luaunit"
+local Proj = require "src.project"
 
 function testIsProjTable()
   local table = require("Project")
@@ -33,5 +33,4 @@ function testPkgClone()
   lu.assertTrue(status)
   os.execute("rm -rf tmp")
 end
-
-os.exit( lu.LuaUnit.run() )
+-- lu.LuaUnit.run()
