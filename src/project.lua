@@ -1,7 +1,7 @@
 local Proj = {}
-local Base = require "src/base"
-local Cm = require "src/command"
-local Git = require "src/git"
+local Base = require "src.base"
+local Cm = require "src.command"
+local Git = require "src.git"
 
 Proj.homedir = Cm.capturestdout("echo ~$user")
 Proj.terrahome = Cm.capturestdout("echo $TERRA_PKG_ROOT")
