@@ -1,7 +1,8 @@
-local Git = {}
-local Cm = require "src.command"
-local Base = require "src.base"
+local pkgdir = "dev.Pkg.src."
+local Cm = require(pkgdir.."command")
+local Base = require(pkgdir.."base")
 
+local Git = {}
 Git.user = {}
 Git.user.name = Cm.capturestdout("git config user.name")
 Git.user.email = Cm.capturestdout("git config user.email")
@@ -48,6 +49,42 @@ function Git.addremote(root, url)
         "cd "..root.."; "..
         "git remote add origin "..url..";"..
         "git push -u origin main")
+end
+
+function Git.add(root, options)
+    os.execute(
+        "cd "..root.."; "..
+        "git add "..options)
+end
+
+function Git.commit(root, message)
+    os.execute(
+        "cd "..root.."; "..
+        "git commit -m ".."\""..message.."\"")
+end
+
+function Git.tag(root, version, message)
+    os.execute(
+        "cd "..root.."; "..
+        "git tag -a "..Base.esc(version).." -m "..Base.esc(message))
+end
+
+function Git.push(root, options)
+    os.execute(
+        "cd "..root.."; "..
+        "git push "..options)
+end
+
+function Git.pull(root)
+    os.execute(
+        "cd "..root.."; "..
+        "git pull")
+end
+
+function Git.treehash(root)
+    os.execute(
+        "cd "..root.."; "..
+        "git rev-parse HEAD^{tree}")
 end
 
 return Git
