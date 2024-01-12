@@ -1,7 +1,8 @@
-local Base = require "src.base"
-local Cm   = require "src.command"
-local Git  = require "src.git"
-local Proj = require "src.project"
+local pkgdir = "dev.Pkg.src."
+local Base = require(pkgdir.."base")
+local Cm   = require(pkgdir.."command")
+local Git  = require(pkgdir.."git")
+local Proj = require(pkgdir.."project")
 
 local Reg = {}
 
@@ -104,8 +105,8 @@ end
 local function initpkgspecs(reg, pkg)
 
   --create  .terra/registries/${reg}/${specpath}/Project.t 
-  local root = reg.path.."/"..pkg.specpath
-  local filename = pkg.table.version..".lua" --the version name is the main filename specifier
+  local root = reg.path.."/"..pkg.specpath.."/"..pkg.table.version
+  local filename = "Specs.lua" --the version name is the main filename specifier
   os.execute( "mkdir -p "..root..";"..
               "cd "..root..";"..
               "touch "..filename)
@@ -119,9 +120,11 @@ local function initpkgspecs(reg, pkg)
   io.write(string.format("    name = %q,\n", pkg.table.name))
   io.write(string.format("    uuid = %q,\n", pkg.table.uuid))
   io.write(string.format("    version = %q,\n", pkg.table.version))
-  io.write(string.format("    url  = %q,\n", "not implemented"))
-  io.write(string.format("    [\"git-tree-sha1\"] = %q,\n", "not implemented"))
-  io.write(string.format("    deps = %q,\n", "not implemented"))
+  io.write(string.format("    url  = %q,\n", pkg.url))
+  io.write(string.format("    sha1 = %q,\n", pkg.sha1))
+  --write dependencies
+  io.write("    deps = ")
+  Base.serialize(pkg.table.deps, 2)
   io.write("}\n")
   io.write("return Project")
   io.close(file)
@@ -157,6 +160,8 @@ function Reg.register(regname)
   pkg.path = Cm.currentworkdir()
   pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
   pkg.table = dofile("Project.lua")
+  pkg.sha1 = Git.treehash(".")
+  pkg.url = ""
 
   --update registry pkg list and save
   registry.table.packages[pkg.table.name] = { uuid = pkg.table.uuid, path = pkg.specpath}        
@@ -164,6 +169,11 @@ function Reg.register(regname)
 
   --create pkg specs-list
   initpkgspecs(registry, pkg)
+end
+
+--push and commit changes
+function Reg.push(regname)
+
 end
 
 return Reg

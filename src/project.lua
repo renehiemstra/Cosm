@@ -1,7 +1,9 @@
+local pkgdir = "dev.Pkg.src."
+local Base = require(pkgdir.."base")
+local Cm = require(pkgdir.."command")
+local Git = require(pkgdir.."git")
+
 local Proj = {}
-local Base = require "src.base"
-local Cm = require "src.command"
-local Git = require "src.git"
 
 Proj.homedir = Cm.capturestdout("echo ~$user")
 Proj.terrahome = Cm.capturestdout("echo $TERRA_PKG_ROOT")
