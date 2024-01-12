@@ -131,37 +131,39 @@ local function initpkgspecs(reg, pkg)
 end
 
 --register a package to a registry
-function Reg.register(regname)
+function Reg.register(args)
   --check keyword arguments
-  if regname==nil then
-    error("Provide registry name.\n")
+  if args.reg==nil then
+    error("Provide `reg` (registry) name.\n")
+  elseif args.url==nil then
+    error("Provide package `url`.\n")
   end
-  if type(regname)~="string" then
-    error("Provide registry name as string.\n")
-  end
-  --check if current folder is a valid package
-  if not Proj.ispkg(".") then
-    error("Current folder does not follow package specifications.\n")
+  if type(args.reg)~="string" then
+    error("Provide `reg` (registry) name as a string.\n")
+  elseif type(args.url)~="string" then
+    error("Provide package git `url` as a string")
   end
   --check if registry name points to a valid registry
-  if not Reg.isreg(regname) then
+  if not Reg.isreg(args.reg) then
     error("Directory does not follow registry specifications.\n")
   end
+  --download pkg associated with git url (error checking is done therein)
+  Proj.clone{root=terradir.."/".."packages", url=args.url}
 
   --initialize registry properties
   local registry = {}
-  registry.name = regname
-  registry.path = regdir.."/"..regname
+  registry.name = args.reg
+  registry.path = regdir.."/"..registry.name
   registry.table = dofile(registry.path.."/Registry.lua")
 
   --initialize package properties
   local pkg = {}
-  pkg.name = Cm.namedir(".")
-  pkg.path = Cm.currentworkdir()
+  pkg.dir = terradir.."/".."packages".."/"..Git.namefromgiturl(args.url)
+  pkg.table = dofile(pkg.dir.."/".."Project.lua")
+  pkg.name = pkg.table.name
+  pkg.url = args.url
   pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
-  pkg.table = dofile("Project.lua")
-  pkg.sha1 = Git.treehash(".")
-  pkg.url = ""
+  pkg.sha1 = Git.treehash(pkg.dir)
 
   --update registry pkg list and save
   registry.table.packages[pkg.table.name] = { uuid = pkg.table.uuid, path = pkg.specpath}        

@@ -82,9 +82,7 @@ function Git.pull(root)
 end
 
 function Git.treehash(root)
-    os.execute(
-        "cd "..root.."; "..
-        "git rev-parse HEAD^{tree}")
+    return Cm.capturestdout("cd "..root.."; git rev-parse HEAD^{tree}")
 end
 
 return Git
