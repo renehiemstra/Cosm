@@ -1,5 +1,15 @@
 local lu = require "luaunit"
-local Cm = require "src.command"
+
+local pkgdir = "dev.Pkg.src."
+local Cm = require(pkgdir.."command")
+
+function testSuccess()
+    os.execute("mkdir tmp; touch tmp/tmp.lua")
+    lu.assertTrue(Cm.success{cm="test -f tmp/tmp.lua"})
+    lu.assertTrue(Cm.success{cm="test -f tmp.lua", root="tmp"})
+    lu.assertFalse(Cm.success{cm="test -f tmp/tmp.cpp"})
+    os.execute("rm -rf tmp")
+end
 
 function testGetFileExtension()
     lu.assertEquals(Cm.getfileextension("hello.t"), "t")
@@ -32,4 +42,4 @@ function testMkDir()
     os.execute("rm -rf tmp")
 end
 
--- lu.LuaUnit.run()
+lu.LuaUnit.run()
