@@ -3,6 +3,7 @@ local Base = require(pkgdir.."base")
 local Cm   = require(pkgdir.."command")
 local Git  = require(pkgdir.."git")
 local Proj = require(pkgdir.."project")
+local Semver  = require(pkgdir.."semver")
 
 local Reg = {}
 
@@ -81,8 +82,11 @@ function Reg.create(registry)
   --path to registry root
   local root = regdir.."/"..registry.name
 
-  --generate registry folder 
-  os.execute("mkdir "..root)
+  --generate registry folder
+  Cm.throw{cm="mkdir -p "..root}
+
+  --generate .ignore file
+  Git.ignore(root, {".DS_Store", ".vscode"})
 
   --generate Registry.toml
   local file = io.open(root.."/Registry.lua", "w")
@@ -97,8 +101,11 @@ function Reg.create(registry)
   file:close()
 
   --create git repo and push to origin
-  Git.initrepo(root)
-  Git.addremote(root, registry.url)
+  Cm.throw{cm="git init", root=root}
+  Cm.throw{cm="git add .", root=root}
+  Cm.throw{cm="git commit -m \"Initialized new registry.\"", root=root}
+  Cm.throw{cm="git remote add origin "..registry.url, root=root}
+  Cm.throw{cm="git push --set-upstream origin main", root=root}
 end
 
 --initiates package specifics - assumes that input is already checked
@@ -107,10 +114,9 @@ local function initpkgspecs(reg, pkg)
   --create  .terra/registries/${reg}/${specpath}/Project.t 
   local root = reg.path.."/"..pkg.specpath.."/"..pkg.table.version
   local filename = "Specs.lua" --the version name is the main filename specifier
-  os.execute( "mkdir -p "..root..";"..
-              "cd "..root..";"..
-              "touch "..filename)
-
+  Cm.throw{cm="mkdir -p "..root}
+  Cm.throw{cm="touch "..root.."/"..filename}
+  
   --write Project.t
   local file = io.open(root.."/"..filename, "w")
   io.output(file)
@@ -171,11 +177,71 @@ function Reg.register(args)
 
   --create pkg specs-list
   initpkgspecs(registry, pkg)
+
+  --update registry remote git repository
+  local commitmessage = "\"<new package> "..pkg.name.."\""
+  Cm.throw{cm="git add .", root=registry.path}
+  Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
+  Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
 end
 
---push and commit changes
-function Reg.push(regname)
+function Reg.release(args)
+  --check keyword argument `release`
+  local v = args.release
+  if not ((v=="patch") or (v=="minor") or (v=="major")) then
+    error("Provide `release` equal to \"patch\", \"minor\", or \"major\".\n\n")
+  end
+  --check keyword argument `reg`
+  if type(args.reg)~="string" then
+    error("Provide `reg` (registry) name as a string.\n\n")
+  end
+  --check if registry name points to a valid registry
+  if not Reg.isreg(args.reg) then
+    error("Directory does not follow registry specifications.\n")
+  end
+  --check of current directory is a valid package
+  if not Proj.ispkg(".") then
+    error("Current directory does not follow the specifications of a terra pkg.\n")
+  end
 
+  --initialize registry properties
+  local registry = {}
+  registry.name = args.reg
+  registry.path = regdir.."/"..registry.name
+  registry.table = dofile(registry.path.."/Registry.lua")
+
+  --initialize package properties
+  local pkg = {}
+  pkg.table = dofile("Project.lua")
+  pkg.name = pkg.table.name
+  pkg.url = args.url
+  pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
+  pkg.sha1 = Git.treehash(pkg.dir)
+
+  --throw error if package is not registered.
+  if registry.table.packages[pkg.name] == nil then
+    error("Package "..pkg.name.." is not a registered in "..registry.name..".\n\n")
+  end
+
+  --increase package version
+  local version = Semver.parse(pkg.table.version)
+  if args.release=="patch" then
+    version:nextPatch()
+  elseif args.release=="minor" then
+    version:nextMinor()
+  elseif args.release=="major" then
+    version:nextMajor()
+  end
+  pkg.table.version = tostring(version)
+
+  --create pkg specs-list
+  initpkgspecs(registry, pkg)
+
+  --update registry remote git repository
+  local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.table.version.."\""
+  Cm.throw{cm="git add .", root=registry.path}
+  Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
+  Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
 end
 
 return Reg
