@@ -1,6 +1,7 @@
 local lu = require "luaunit"
-local Reg = require "src.registry"
-local Proj = require "src.project"
+
+local pkgdir = "dev.Pkg.src."
+local Reg = require(pkgdir.."registry")
 
 function testSaveRegistry()
 
@@ -18,4 +19,4 @@ function testIsRegistry()
     lu.assertFalse(Reg.isreg("RegistryDoesntExist"))
 end
 
-lu.LuaUnit.run()
+-- lu.LuaUnit.run()

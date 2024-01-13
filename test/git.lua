@@ -41,4 +41,4 @@ function testIgnoreFile()
   Cm.rmdir("tmp") --cleanup
 end
 
-lu.LuaUnit.run()
+-- lu.LuaUnit.run()

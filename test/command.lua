@@ -42,4 +42,4 @@ function testMkDir()
     os.execute("rm -rf tmp")
 end
 
-lu.LuaUnit.run()
+-- lu.LuaUnit.run()

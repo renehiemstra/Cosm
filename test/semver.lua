@@ -15,4 +15,4 @@ function testToString()
     lu.assertEquals(version, Semver.parse(tostring(version)))
 end
 
-lu.LuaUnit.run()
+-- lu.LuaUnit.run()
