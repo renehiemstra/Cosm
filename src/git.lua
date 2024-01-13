@@ -32,14 +32,6 @@ function Git.namefromgiturl(url)
     return string.sub(Cm.capturestdout("echo $(basename "..Base.esc(url)..")"), 1, -5)
 end
 
---initialize git repository
-function Git.initrepo(root)
-    os.execute("cd "..root..";".. 
-        "git init"..";"..          
-        "git add ."..";"..         
-        "git commit -m \"First commit\"")
-end
-
 --add origin and push
 function Git.addremote(root, url)
     if not Git.validemptygitrepo(url) then
@@ -50,6 +42,14 @@ function Git.addremote(root, url)
         "git remote add origin "..url..";"..
         "git push -u origin main")
 end
+
+function Git.init(root, commitmessage)
+    --create git repo and push to origin
+    Cm.throw{cm="git init", root=root}
+    Cm.throw{cm="git add .", root=root}
+    Cm.throw{cm="git commit -m \""..commitmessage.."\"", root=root}
+end
+
 
 function Git.add(root, options)
     os.execute(
@@ -83,6 +83,19 @@ end
 
 function Git.treehash(root)
     return Cm.capturestdout("cd "..root.."; git rev-parse HEAD^{tree}")
+end
+
+--generate .ignore file
+function Git.ignore(root, list)
+    local file = io.open(root.."/.ignore", "w")
+    for k,v in pairs(list) do
+        if not type(v)=="string" then
+            error("Provide a string as input.")
+        else
+            file:write(v.."\n")
+        end
+    end
+    file:close()
 end
 
 return Git
