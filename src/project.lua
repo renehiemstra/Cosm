@@ -110,15 +110,14 @@ function Proj.clone(args)
       error("Provide a non-empty git repository.\n")
   end
   --clone remote repo
-  os.execute("mkdir -p "..args.root..";"..
-      "cd "..args.root..";"..
-      "git clone "..args.url)
+  Cm.throw{cm="mkdir -p "..args.root}
+  Cm.throw{cm="git clone "..args.url, root=args.root}
 
   --check that cloned repo satisfies basic package structure
   local pkgname = Git.namefromgiturl(args.url)          
   if not Proj.ispkg(args.root.."/"..pkgname) then
       --remove terra cloned repo 
-      os.execute("cd "..args.root..";".."rm -rf "..pkgname)
+      Cm.throw{cm="rm -rf "..pkgname, root=args.root}
       --throw error
       error("Cloned repository does not follow the specifications of a terra pkg.\n")
   end
@@ -129,6 +128,7 @@ local function genpkgdirs(pkgname)
   Cm.mkdir(pkgname) --package root folder
   Cm.mkdir(pkgname.."/src") --package source folder
   Cm.mkdir(pkgname.."/.pkg") --package managing folder
+  Git.ignore(pkgname, {".DS_Store", ".vscode"}) --generate .ignore file
 end
 
 --generate main source file
@@ -164,7 +164,12 @@ function Proj.create(pkgname)
   genpkgdirs(pkgname)
   gensrcfile(pkgname)
   genprojfile(pkgname)
-  Git.initrepo(pkgname)
+
+  --update registry remote git repository
+  local commitmessage = "\"<new package> "..pkgname.."\""
+  Cm.throw{cm="git init", root=pkgname}
+  Cm.throw{cm="git add .", root=pkgname}
+  Cm.throw{cm="git commit -m "..commitmessage, root=pkgname}
 end
 
 return Proj
