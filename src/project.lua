@@ -124,16 +124,16 @@ function Proj.clone(args)
 end
 
 --generate package folders
-local function genpkgdirs(pkgname)
-  Cm.mkdir(pkgname) --package root folder
-  Cm.mkdir(pkgname.."/src") --package source folder
-  Cm.mkdir(pkgname.."/.pkg") --package managing folder
-  Git.ignore(pkgname, {".DS_Store", ".vscode"}) --generate .ignore file
+local function genpkgdirs(pkgname, root)
+  Cm.mkdir(root.."/"..pkgname) --package root folder
+  Cm.mkdir(root.."/"..pkgname.."/src") --package source folder
+  Cm.mkdir(root.."/"..pkgname.."/.pkg") --package managing folder
+  Git.ignore(root.."/"..pkgname, {".DS_Store", ".vscode"}) --generate .ignore file
 end
 
 --generate main source file
-local function gensrcfile(pkgname)
-  local file = io.open(pkgname.."/src/"..pkgname..".t", "w")                                       
+local function gensrcfile(pkgname, root)
+  local file = io.open(root.."/"..pkgname.."/src/"..pkgname..".t", "w")                                       
   file:write("local Pkg = require(\"Pkg\")\n")
   file:write("local Example = Pkg.require(\"Example\")\n\n")
   file:write("local S = {}\n\n")
@@ -146,8 +146,8 @@ local function gensrcfile(pkgname)
 end
 
 --generate Package.lua
-local function genprojfile(pkgname)
-  local file = io.open(pkgname.."/Project.lua", "w")
+local function genprojfile(pkgname, root)
+  local file = io.open(root.."/"..pkgname.."/Project.lua", "w")
   file:write("Project = {\n")
   file:write("    name = \""..pkgname.."\",\n")
   file:write("    uuid = \""..Proj.uuid().."\",\n")
@@ -160,16 +160,16 @@ local function genprojfile(pkgname)
 end
 
 --create a terra pkg template
-function Proj.create(pkgname)
-  genpkgdirs(pkgname)
-  gensrcfile(pkgname)
-  genprojfile(pkgname)
+function Proj.create(pkgname, root)
+  genpkgdirs(pkgname, root)
+  gensrcfile(pkgname, root)
+  genprojfile(pkgname, root)
 
   --update registry remote git repository
   local commitmessage = "\"<new package> "..pkgname.."\""
-  Cm.throw{cm="git init", root=pkgname}
-  Cm.throw{cm="git add .", root=pkgname}
-  Cm.throw{cm="git commit -m "..commitmessage, root=pkgname}
+  Cm.throw{cm="git init", root=root.."/"..pkgname}
+  Cm.throw{cm="git add .", root=root.."/"..pkgname}
+  Cm.throw{cm="git commit -m "..commitmessage, root=root.."/"..pkgname}
 end
 
 return Proj
