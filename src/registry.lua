@@ -182,6 +182,7 @@ function Reg.register(args)
   local commitmessage = "\"<new package> "..pkg.name.."\""
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
+  Cm.throw{cm="git pull"..commitmessage, root=registry.path}
   Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
 end
 
@@ -241,6 +242,7 @@ function Reg.release(args)
   local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.table.version.."\""
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
+  Cm.throw{cm="git pull", root=registry.path}
   Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
 end
 
