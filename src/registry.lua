@@ -8,8 +8,7 @@ local Semver  = require(pkgdir.."semver")
 local Reg = {}
 
 --terra directories
-local terradir = Cm.capturestdout("echo $TERRA_PKG_ROOT")
-local regdir = terradir.."/registries"
+Reg.regdir = Proj.terrahome.."/registries"
 
 --check if table is a valid registry table
 function Reg.isregtable(table)
@@ -26,14 +25,14 @@ function Reg.isreg(name)
   if not type(name)=="string" then
     error("Provide a string as input.")
   end
-  local root = regdir.."/"..name
+  local root = Reg.regdir.."/"..name
   if not Cm.isdir(root) then
     return false
   end
   if not Cm.isfile(root.."/Registry.lua") then
     return false
   end
-  local table = dofile(regdir.."/"..name.."/Registry.lua")
+  local table = dofile(Reg.regdir.."/"..name.."/Registry.lua")
   return Reg.isregtable(table)
 end
 
@@ -80,7 +79,7 @@ function Reg.create(registry)
   end
 
   --path to registry root
-  local root = regdir.."/"..registry.name
+  local root = Reg.regdir.."/"..registry.name
 
   --generate registry folder
   Cm.throw{cm="mkdir -p "..root}
@@ -154,17 +153,17 @@ function Reg.register(args)
     error("Directory does not follow registry specifications.\n")
   end
   --download pkg associated with git url (error checking is done therein)
-  Proj.clone{root=terradir.."/".."packages", url=args.url}
+  Proj.clone{root=Proj.terrahome.."/".."packages", url=args.url}
 
   --initialize registry properties
   local registry = {}
   registry.name = args.reg
-  registry.path = regdir.."/"..registry.name
+  registry.path = Reg.regdir.."/"..registry.name
   registry.table = dofile(registry.path.."/Registry.lua")
 
   --initialize package properties
   local pkg = {}
-  pkg.dir = terradir.."/".."packages".."/"..Git.namefromgiturl(args.url)
+  pkg.dir = Proj.terrahome.."/".."packages".."/"..Git.namefromgiturl(args.url)
   pkg.table = dofile(pkg.dir.."/".."Project.lua")
   pkg.name = pkg.table.name
   pkg.url = args.url
@@ -182,7 +181,7 @@ function Reg.register(args)
   local commitmessage = "\"<new package> "..pkg.name.."\""
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
-  Cm.throw{cm="git pull"..commitmessage, root=registry.path}
+  Cm.throw{cm="git pull", root=registry.path}
   Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
 end
 
@@ -208,7 +207,7 @@ function Reg.release(args)
   --initialize registry properties
   local registry = {}
   registry.name = args.reg
-  registry.path = regdir.."/"..registry.name
+  registry.path = Reg.regdir.."/"..registry.name
   registry.table = dofile(registry.path.."/Registry.lua")
 
   --initialize package properties
