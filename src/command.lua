@@ -35,7 +35,7 @@ end
 function Cm.throw(args)
     if not Cm.success(args) then
         if args.message==nil then
-            args.message = "Command failed.\n\n"
+            args.message = "Command: <"..args.cm.."> failed.\n\n"
         elseif type(args.message)~="string" then
             error("Provide error `message` as a string.\n\n")
         end
