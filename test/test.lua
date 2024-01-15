@@ -7,5 +7,6 @@ require(pkgdir.."base")
 require(pkgdir.."command")
 require(pkgdir.."git")
 require(pkgdir.."project")
+require(pkgdir.."registry")
 
 lu.LuaUnit.run()

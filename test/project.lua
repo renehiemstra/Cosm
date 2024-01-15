@@ -51,4 +51,4 @@ function testPkgCreateAndClone()
   delete_pkg("ExamplePkg", "tmp1")
 end
 
-lu.LuaUnit.run()
+-- lu.LuaUnit.run()
