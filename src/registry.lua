@@ -36,6 +36,36 @@ function Reg.isreg(name)
   return Reg.isregtable(table)
 end
 
+--load all registries listed in List.lua
+function Reg.loadregistries(filename)
+  if not Cm.isfile(Reg.regdir.."/"..filename) then
+    error("List.lua does not exist.\n\n")
+  end
+  local list = dofile(Reg.regdir.."/"..filename)
+  if not type(list)=="table" then
+    error("List.lua should return a table with containing the names of all registries.\n\n")
+  end
+  return list
+end
+
+--save all registries to List.lua
+function Reg.saveregistries(table, filename)
+  if not type(table) == "table" then
+    error("Not a lua table.\n\n")
+  end
+  if not Cm.isfile(Reg.regdir.."/"..filename) then
+    Cm.throw{cm="touch "..filename, root=Reg.regdir}
+  end
+  local file = io.open(Reg.regdir.."/"..filename, "w")
+  io.output(file)
+  io.write("local List = {\n")
+  for k,v in pairs(table) do
+    io.write(string.format("    %q,\n", v))
+  end
+  io.write("}\n")
+  io.write("return List")
+end
+
 --save `regtable` to a Registry.lua file
 function Reg.save(regtable, regfile, root)
   --check input
@@ -153,7 +183,7 @@ function Reg.register(args)
     error("Directory does not follow registry specifications.\n")
   end
   --download pkg associated with git url (error checking is done therein)
-  Proj.clone{root=Proj.terrahome.."/".."packages", url=args.url}
+  Proj.clone{root=Proj.terrahome.."/".."clones", url=args.url}
 
   --initialize registry properties
   local registry = {}
@@ -163,7 +193,7 @@ function Reg.register(args)
 
   --initialize package properties
   local pkg = {}
-  pkg.dir = Proj.terrahome.."/".."packages".."/"..Git.namefromgiturl(args.url)
+  pkg.dir = Proj.terrahome.."/".."clones".."/"..Git.namefromgiturl(args.url)
   pkg.table = dofile(pkg.dir.."/".."Project.lua")
   pkg.name = pkg.table.name
   pkg.url = args.url

@@ -9,8 +9,38 @@ Proj.homedir = Cm.capturestdout("echo ~$user")
 Proj.terrahome = Cm.capturestdout("echo $TERRA_PKG_ROOT")
 
 --load a terra package
-function Proj.require(package)
-  return require(package..".src."..package)
+function Proj.require(depname)
+  --determine file where the function call emenates from
+  local callfile = debug.getinfo(2, "S").source:sub(2)
+  --determine the folder of this file
+  local calldir = callfile:match("(.*/)")
+  --check if root is an actual pkg
+  if not Proj.ispkg(calldir.."/..") then
+    error("Error: Directory does not satisfy the requirements of a package.\n\n")
+  end
+  -- load package table
+  local pkg = {}
+  pkg.table = dofile(calldir.."/../Project.lua")
+  local dep = {}
+  --check if dep is listed as such in the Project.lua file
+  dep.name = depname
+  dep.version = pkg.table.deps[dep.name]
+  if dep.version==nil then
+    error("Error: package "..dep.name.." is not listed as a dependency in Project.lua.\n\n")
+  end
+  local found = false
+  for _,path in pairs{"dev", "packages"} do --directories in .terra to look for package
+    if Proj.ispkg(Proj.terrahome.."/"..path.."/"..dep.name) then
+      found = true
+      dep.req = path.."."..dep.name..".src."..dep.name
+      break
+    end
+  end
+  if not found then
+    error("Error: package dependency "..dep.name.." could not be located. Please register it to a package registry. \n\n")
+  end
+  --load dependency
+  return require(dep.req)
 end
 
 --check if table is a valid project table
@@ -81,11 +111,8 @@ function Proj.save(projtable, projfile, root)
   --write version
   io.write(string.format("  version = %q,\n",projtable.version))
   --write dependencies
-  io.write("  ", "deps = {\n")
-  for k,v in pairs(projtable.deps) do
-      io.write(string.format("    %q,\n", v))
-  end
-  io.write("  }\n")
+  io.write("    deps = ")
+  Base.serialize(projtable.deps, 2)
   io.write("}\n")
   io.write("return Project")
 
@@ -171,5 +198,6 @@ function Proj.create(pkgname, root)
   Cm.throw{cm="git add .", root=root.."/"..pkgname}
   Cm.throw{cm="git commit -m "..commitmessage, root=root.."/"..pkgname}
 end
+
 
 return Proj

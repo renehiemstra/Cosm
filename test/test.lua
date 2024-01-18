@@ -9,4 +9,4 @@ require(pkgdir.."git")
 require(pkgdir.."project")
 require(pkgdir.."registry")
 
-lu.LuaUnit.run()
+os.exit(lu.LuaUnit.run())
