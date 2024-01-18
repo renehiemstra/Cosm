@@ -66,6 +66,35 @@ function Reg.saveregistries(table, filename)
   io.write("return List")
 end
 
+--check if registry is listed in List.lua
+function Reg.islisted(registry)
+  for _,listedreg in ipairs(Reg.loadregistries("List.lua")) do
+    if listedreg==registry then
+      return true
+    end
+  end
+  return false
+end
+
+--add registry name to the list
+function Reg.addtolist(registry)
+  local list = Reg.loadregistries("List.lua")
+  table.insert(list, registry)
+  Reg.saveregistries(list, "List.lua")
+end
+
+--add registry name to the list
+function Reg.rmfromlist(registry)
+  local list = Reg.loadregistries("List.lua")
+  for i,v in ipairs(list) do
+    if v==registry then
+      table.remove(list, i)
+      break
+    end
+  end
+  Reg.saveregistries(list, "List.lua")
+end
+
 --save `regtable` to a Registry.lua file
 function Reg.save(regtable, regfile, root)
   --check input
@@ -103,6 +132,11 @@ function Reg.create(registry)
     error("Provide git `url` as a string.\n")
   end
 
+  --check if a registry with that name already exists
+  if Reg.islisted(registry) then
+    error("A registry with name "..registry.." already exists.\n\n")
+  end
+
   --Throw an error if url is not valid
   if not Git.validemptygitrepo(registry.url) then
     error("Provide an empty git repository.\n")
@@ -135,6 +169,9 @@ function Reg.create(registry)
   Cm.throw{cm="git commit -m \"Initialized new registry.\"", root=root}
   Cm.throw{cm="git remote add origin "..registry.url, root=root}
   Cm.throw{cm="git push --set-upstream origin main", root=root}
+
+  --add name of registry to the list of registries
+  Reg.addtolist(registry.name)
 end
 
 --initiates package specifics - assumes that input is already checked

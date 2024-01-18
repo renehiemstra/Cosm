@@ -41,10 +41,4 @@ function testIgnoreFile()
   Cm.rmdir("tmp") --cleanup
 end
 
-function testRepoUpToDate()
-
-  Cm.capturestdout("")
-
-end
-
 -- lu.LuaUnit.run()
