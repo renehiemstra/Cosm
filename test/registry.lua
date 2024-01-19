@@ -37,4 +37,4 @@ function testIsListed()
     lu.assertFalse(Reg.islisted(registry))
 end
 
---lu.LuaUnit.run()
+lu.LuaUnit.run()

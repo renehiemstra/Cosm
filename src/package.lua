@@ -5,20 +5,34 @@ local Reg = require(pkgdir.."registry")
 
 local Pkg = {}
 
-function Pkg.add(pkgdep, version)
-    if not Proj.ispkg(".") then
+--add a dependency to a project
+--signature Pkg.add{dep="...", version="xx.xx.xx"; root="..."}
+function Pkg.add(args)
+    local pkg = {}
+    --check key-value arguments
+    if type(args)~="table" then
+        error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
+    elseif args.dep==nil or args.version==nil then
+        error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
+    elseif type(args.dep)~="string" or type(args.version)~="string" then
+        error("Provide table with `dep` (dependency) and `version` as a string.\n\n")
+    end
+    --set and check pkg root
+    pkg.root = "."
+    if args.root~=nil then
+        pkg.root = args.root
+    end
+    if not Proj.ispkg(pkg.root) then
         error("Current directory is not a valid package.")
     end
     --initialize package properties
-    local pkg = {}
-    pkg.table = dofile("Project.lua")
+    pkg.dep = {name=args.dep, version=args.version}
+    pkg.table = dofile(pkg.root.."/".."Project.lua")
     pkg.name = pkg.table.name
-
-    --check that pkg and pkgdep are not the same package
-    if pkg.name==pkgdep then
-      error("Cannot add "..pkgdep.."as a dependency to "..pkg.name..".\n\n")
+    --check that pkg and pkg.dep are not the same package
+    if pkg.name==pkg.dep.name then
+      error("Cannot add "..pkg.dep.name.."as a dependency to "..pkg.name..".\n\n")
     end
-  
     --find pkgdep in known registries
     local registry = {}
     local found = false
@@ -27,39 +41,50 @@ function Pkg.add(pkgdep, version)
         registry.name = regname
         registry.path = Reg.regdir.."/"..registry.name
         registry.table = dofile(registry.path.."/Registry.lua")
-        --check if pkgdep is present
-        if registry.table.packages[pkgdep]~=nil then
+        --check if pkg.dep is present
+        if registry.table.packages[pkg.dep.name]~=nil then
             found = true --package is found
             break --currently we break with the first encountered package
         end
     end
     --case where pkgdep is not found in any of the registries
     if not found then
-        error("Package "..pkgdep.."is not a registered package.\n\n")
+        error("Package "..pkg.dep.name.."is not a registered package.\n\n")
     end
     --check if version is present in registry
-    local specs = registry.table.packages[pkgdep]
-    local versionpath = registry.path.."/"..specs.path.."/"..version
+    pkg.dep.specs = registry.table.packages[pkg.dep.name]
+    local versionpath = registry.path.."/"..pkg.dep.specs.path.."/"..pkg.dep.version
     if not Cm.isdir(versionpath) then
-        error("Package "..pkgdep.." is registered in "..registry.name..", but version "..version.." is lacking.\n\n")
+        error("Package "..pkg.dep.name.." is registered in "..registry.name..", but version "..pkg.dep.version.." is lacking.\n\n")
     end
-    --add pkgdep to the project dependencies
-    pkg.table.deps[pkgdep] = version
+    --add pkg.dep to the project dependencies
+    pkg.table.deps[pkg.dep.name] = pkg.dep.version
     --save pkg table
-    Proj.save(pkg.table, "Project.lua", ".")
+    Proj.save(pkg.table, "Project.lua", pkg.root)
 end
 
-function Pkg.rm(pkgdep)
-    if not Proj.ispkg(".") then
+function Pkg.rm(pkg)
+    --check key-value arguments
+    if type(pkg)~="table" then
+        error("Provide table with `dep` (dependency) and optional `root` directory.\n\n")
+    elseif pkg.dep==nil then
+        error("Provide table with `dep` (dependency) and optional `root` directory.\n\n")
+    elseif type(pkg.dep)~="string" then
+        error("Provide table with `dep` (dependency) as a string.\n\n")
+    end
+    --set and check pkg root
+    if pkg.root==nil then
+        pkg.root = "."
+    end
+    if not Proj.ispkg(pkg.root) then
         error("Current directory is not a valid package.")
     end
-    --initialize package properties
-    local pkg = {}
-    pkg.table = dofile("Project.lua")
+    --load package properties
+    pkg.table = dofile(pkg.root.."/Project.lua")
     --removing pkg dependency
-    pkg.table.deps[pkgdep] = nil
+    pkg.table.deps[pkg.dep] = nil
     --save pkg table
-    Proj.save(pkg.table, "Project.lua", ".")
+    Proj.save(pkg.table,"Project.lua", pkg.root)
 end
 
 return Pkg

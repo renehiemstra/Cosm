@@ -103,7 +103,7 @@ function Proj.save(projtable, projfile, root)
   io.write(string.format("  name = %q,\n",projtable.name))
   io.write(string.format("  uuid = %q,\n",projtable.uuid))
   -- write author list
-  io.write("  ", "authors = {")
+  io.write("  authors = {")
   for k,v in pairs(projtable.authors) do
       io.write(string.format("%q, ", v))
   end
@@ -111,7 +111,7 @@ function Proj.save(projtable, projfile, root)
   --write version
   io.write(string.format("  version = %q,\n",projtable.version))
   --write dependencies
-  io.write("    deps = ")
+  io.write("  deps = ")
   Base.serialize(projtable.deps, 2)
   io.write("}\n")
   io.write("return Project")
