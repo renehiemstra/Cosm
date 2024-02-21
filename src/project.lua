@@ -1,12 +1,11 @@
-local pkgdir = "dev.Pkg.src."
-local Base = require(pkgdir.."base")
-local Cm = require(pkgdir.."command")
-local Git = require(pkgdir.."git")
+local Base = require("base")
+local Cm = require("command")
+local Git = require("git")
 
 local Proj = {}
 
 Proj.homedir = Cm.capturestdout("echo ~$user")
-Proj.terrahome = Cm.capturestdout("echo $TERRA_PKG_ROOT")
+Proj.terrahome = Cm.capturestdout("echo $COSM_DEPOT_PATH")
 
 --load a terra package
 function Proj.require(depname)
@@ -59,15 +58,18 @@ function Proj.ispkg(root)
     error("Provide a string as input.")
   end
   if not Cm.isdir(root) then
+    print("not a directory")
     return false
   end
   if not Cm.isfile(root.."/Project.lua") then
+    print("not a project file")
     return false
   end
   local pkgname = Cm.namedir(root)
   local c2 = Cm.isfile(root.."/src/"..pkgname..".lua")
   local c3 = Cm.isfile(root.."/src/"..pkgname..".t")
   if not (c2 or c3) then
+    print("not a lua or terra file")
     return false
   end
   local table = dofile(root.."/Project.lua")
@@ -141,7 +143,10 @@ function Proj.clone(args)
   Cm.throw{cm="git clone "..args.url, root=args.root}
 
   --check that cloned repo satisfies basic package structure
-  local pkgname = Git.namefromgiturl(args.url)          
+  print(args.url)
+  local pkgname = Git.namefromgiturl(args.url)
+  print(pkgname)
+  print(args.root.."/"..pkgname)
   if not Proj.ispkg(args.root.."/"..pkgname) then
       --remove terra cloned repo 
       Cm.throw{cm="rm -rf "..pkgname, root=args.root}
@@ -160,13 +165,11 @@ end
 
 --generate main source file
 local function gensrcfile(pkgname, root)
-  local file = io.open(root.."/"..pkgname.."/src/"..pkgname..".t", "w")                                       
-  file:write("local Pkg = require(\"Pkg\")\n")
-  file:write("local Example = Pkg.require(\"Example\")\n\n")
+  local file = io.open(root.."/"..pkgname.."/src/"..pkgname..".lua", "w")                                       
+  file:write("local Cosm = require(\"Cosm\")\n")
   file:write("local S = {}\n\n")
-  file:write("Example.helloterra()\n\n")
-  file:write("function S.helloterra()\n")
-  file:write("  print(\"hello terra!\")\n")
+  file:write("function S.hellolua()\n")
+  file:write("  print(\"hello lua!\")\n")
   file:write("end\n\n")
   file:write("return S")
   file:close()

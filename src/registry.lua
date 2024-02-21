@@ -1,9 +1,8 @@
-local pkgdir = "dev.Pkg.src."
-local Base = require(pkgdir.."base")
-local Cm   = require(pkgdir.."command")
-local Git  = require(pkgdir.."git")
-local Proj = require(pkgdir.."project")
-local Semver  = require(pkgdir.."semver")
+local Base = require("base")
+local Cm   = require("command")
+local Git  = require("git")
+local Proj = require("project")
+local Semver  = require("semver")
 
 local Reg = {}
 
@@ -172,6 +171,13 @@ function Reg.create(registry)
 
   --add name of registry to the list of registries
   Reg.addtolist(registry.name)
+end
+
+function Reg.rm(registry)
+  --remove from list of registries
+  Reg.rmfromlist(registry)
+  --remove folder and content
+  Cm.throw{cm="rm -rf "..registry, root=Reg.regdir}
 end
 
 --initiates package specifics - assumes that input is already checked

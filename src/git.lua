@@ -1,6 +1,5 @@
-local pkgdir = "dev.Pkg.src."
-local Cm = require(pkgdir.."command")
-local Base = require(pkgdir.."base")
+local Cm = require("command")
+local Base = require("base")
 
 local Git = {}
 Git.user = {}

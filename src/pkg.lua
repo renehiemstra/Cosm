@@ -1,7 +1,6 @@
-local pkgdir = "dev.Pkg.src."
-local Cm = require(pkgdir.."command")
-local Proj = require(pkgdir.."project")
-local Reg = require(pkgdir.."registry")
+local Cm = require("command")
+local Proj = require("project")
+local Reg = require("registry")
 
 local Pkg = {}
 
