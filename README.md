@@ -43,7 +43,7 @@ cosm dependency add <name> <version>    (implemented)
 *Evaluate in a package root. Add a dependency to a project. Project <name> with version <version> will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries. If no version is specified it will add the newest available version that is compatible with other package dependencies. The registry to look can also be provided as an option.*
 
 ```
-cosm dependency rm <name>               (not implemented)
+cosm dependency rm <name>               (implemented)
 ```
 *Evaluate in a package root. Removes a project dependency.*
 

@@ -60,6 +60,11 @@ if $run; then
     cd $DEPOT_PATH/dev/Example
     cosm dependency add DepA 0.1.0 
     cosm dependency add DepB 0.1.0 
+    
+    # try to add and remove a package
+    cosm dependency add DepDep 0.1.0
+    cosm dependency rm DepDep
+    
     # release DepB to TestRegistry
     release_add Example
     cd $DEPOT_PATH

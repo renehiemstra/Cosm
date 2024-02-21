@@ -92,10 +92,11 @@ dependency(){
     case "$1" in
         add)    # registry add
             checkname $2
-            lua $COSM_DIR/cli/cmd-dependency.lua $PWD "${@:2}"
+            lua $COSM_DIR/cli/cmd-dependency-add.lua $PWD "${@:2}"
             ;;
         rm)
             checkname $2
+            lua $COSM_DIR/cli/cmd-dependency-rm.lua $PWD "${@:2}"
             ;;
 
         upgrade)
