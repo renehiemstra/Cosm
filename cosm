@@ -1,0 +1,174 @@
+#!/bin/bash
+
+# cosm semver number
+VERSION="0.1.0"
+
+# load common and commands
+set -e
+export COSM_DIR=$(cd $(dirname $0) && pwd)
+
+# check use of zprofile or bash_profile
+set_bash_profile() {
+    if test -f "${HOME}/.bash_profile"; then
+        echo "${HOME}/.bash_profile" # linux, intel macos
+    elif test -f "${HOME}/.zprofile"; then
+        echo "${HOME}/.zprofile" # m-series macos
+    else
+        exit 1
+    fi
+    exit 0
+}
+
+# add the depot to the home folder and add it to the lua path
+create_depot(){
+    local depotpath=$1
+    local prof=$2
+    if [ -z "${COSM_DEPOT_PATH}" ]; then
+        echo "Press any key to install the depot in ${depotpath}"
+        read -n 1 key
+
+        # create depot
+        mkdir "${depotpath}"
+        cd "${depotpath}"
+        mkdir clones packages dev compiled registries
+
+        # copy lua file that helps with package import 
+        git clone git@github.com:renehiemstra/Cosm.git .cosm
+
+        # prepare registry List.lua
+        echo "local List = {}" >> registries/List.lua
+        echo "return List" >> registries/List.lua
+        
+        # add the depot path to your profile
+        echo "The depot is set and ready for use."
+        echo "export COSM_DEPOT_PATH=\"$depotpath\"" >> ${prof}
+    
+        # append COSM_DEPOT_PATH to the LUA_PATH and add to your profile
+        if [ -z "${LUA_PATH}" ]; then
+            echo "export LUA_PATH=\"${depotpath}/?.lua;${COSM_DIR}/../src/?.lua;\"" >> ${prof}
+        else
+            echo "export LUA_PATH=\"${depotpath}/?.lua;${COSM_DIR}/../src/?.lua;${LUA_PATH}\"" >> ${prof}
+        fi
+        echo "Open a new terminal window to continue."
+        exit 0
+    fi
+}
+
+# check that cosm package or registry name consists of letters only
+checkname(){
+    if [[ "$1" =~ [^a-zA-Z] ]]; then
+        printf "cosm: '$1' is not a valid name. See 'cosm --help'.\n \n"
+        exit 1
+    fi
+}
+
+status(){
+    lua $COSM_DIR/cli/cmd-status.lua status
+}
+
+init(){
+    checkname $1
+    lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
+}
+
+registry(){
+    case "$1" in
+        add)    # registry add
+            checkname $2
+            lua $COSM_DIR/cli/cmd-registry-add.lua "${@:2}"
+            ;;
+        rm)     # registry rm
+            checkname $2
+            lua $COSM_DIR/cli/cmd-registry-rm.lua "${@:2}"
+            ;;
+        *)      # default
+            printf "cosm: '$1' is not a 'cosm registry' subcommand. See 'cosm --help'.\n \n"
+            exit 1
+            ;;
+    esac
+}
+
+dependency(){
+    case "$1" in
+        add)    # registry add
+            checkname $2
+            lua $COSM_DIR/cli/cmd-dependency.lua $PWD "${@:2}"
+            ;;
+        rm)
+            checkname $2
+            ;;
+
+        upgrade)
+            checkname $2
+            ;;
+
+        downgrade)
+            checkname $2
+            ;;
+
+        *)      # default
+            printf "cosm: '$1' is not a 'cosm registry' subcommand. See 'cosm --help'.\n \n"
+            exit 1
+            ;;
+    esac
+}
+
+release(){
+    case "$1" in
+        add)    # registry add
+            checkname $2
+            lua $COSM_DIR/cli/cmd-release.lua "${@:2}"
+            ;;
+
+        *)      # default
+            printf "cosm: '$1' is not a 'cosm release' subcommand. See 'cosm --help'.\n \n"
+            exit 1
+            ;;
+    esac
+}
+
+
+# global variable pointing to the .bash_profile or .zprofile
+BASH_PROFILE="$(set_bash_profile)"
+
+# create directory structure
+create_depot "${HOME}/.cosm" "${BASH_PROFILE}"
+
+# cli - command options
+case "$1" in
+
+    # print out version of Cosm
+    --version|-v)
+        printf "cosm version $VERSION \n"
+        ;;
+
+    # Gives an overview of a package or registry when evaluated in the root of a package or registry, respectively.
+    status)          # cosm statusd
+        status
+        ;;
+    
+    # Evaluate in parent folder of a new package. Adds a new package with name <name> according to a template (in .cosm/templates) of specified language <language>.
+    init)    # cosm init
+        init "${@:2}" 
+        ;;
+
+    registry)       # cosm registry
+        registry "${@:2}"
+        ;;
+
+    dependency)     # cosm dependency
+        dependency "${@:2}"
+        ;;
+
+    release)         # cosm release
+        release "${@:2}"
+        ;;
+
+    *) # default
+        printf "cosm: '$1' is not a cosm command. See 'cosm --help'.\n \n"
+        exit 1
+        ;;
+esac
+
+# exit succesfully
+exit 0
