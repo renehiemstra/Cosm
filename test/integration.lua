@@ -59,4 +59,4 @@ function testIntegrationRegistryPkg()
     end
 end
 
--- os.exit(lu.LuaUnit.run())
+os.exit(lu.LuaUnit.run())

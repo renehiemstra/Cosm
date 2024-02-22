@@ -1,23 +1,33 @@
 local Reg = require("src.registry")
+local Git = require("src.git")
 local Cm = require("src.command")
 
-local function abort()
-    print("Invalid option arguments: use `cosm release add <name> <giturl>`")
+local function abort(message)
+    print(message)
     os.exit(1)
 end
 
-local function printstats(pkg)
-    print("Released "..pkg.name.." to "..pkg.reg..".\n")
+local function printstats(registry, pkg)
+    print("Released package"..pkg.." to "..registry..".\n")
 end
 
 --extract command line arguments
 local nargs = #arg
 if nargs==2 then
-    local pkg = {reg=arg[1], url=arg[2]}
-    Reg.register(pkg)
-    --abort() --ToDo: better error message
-    pkg.name = Cm.namedir(".")
-    printstats(pkg)
+    --check root is a registry
+    local root = arg[1]
+    if not Reg.isreg(root) then
+        abort("Invalid arguments: root directory is not a valid registry.")
+    end
+    local regname = Cm.namedir(root)
+    --check url is a valid git url
+    local url = arg[2]
+    if not Git.validnonemptygitrepo(url) then
+        abort("Invalid arguments: git url does not point to a valid repository.")
+    end
+    --register package
+    Reg.register{reg=regname, url=url}
+    printstats(regname, Git.namefromgiturl(url))
 else
-    abort()
+    abort("Invalid arguments: try signature: cosm registry add <giturl>.\n")
 end

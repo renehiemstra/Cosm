@@ -1,7 +1,7 @@
 local Reg = require("src.registry")
 
 local function abort()
-    print("Invalid option arguments: use `cosm registry add <name> <giturl>`")
+    print("Invalid option arguments: use `cosm registry init <name> <giturl>`")
     os.exit(1)
 end
 

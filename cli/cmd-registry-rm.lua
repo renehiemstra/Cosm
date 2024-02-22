@@ -1,22 +1,32 @@
 local Reg = require("src.registry")
+local Git = require("src.git")
+local Cm = require("src.command")
 
-local function abort()
-    print("Invalid arguments: use 'cosm registry rm <name>'")
+local function abort(message)
+    print(message)
     os.exit(1)
 end
 
-local function printstats(name, root)
-    print("Removed registry "..name.." in "..root..".\n")
+local function printstats(registry, pkg)
+    print("Released package"..pkg.." to "..registry..".\n")
 end
 
 --extract command line arguments
 local nargs = #arg
-if nargs==1 then
-    local reg = arg[1]
-    if not pcall(Reg.rm, reg) then
-        abort() --ToDo: better error message
+if nargs==2 then
+    --check root is a registry
+    local root = arg[1]
+    if not Reg.isreg(root) then
+        abort("Invalid arguments: root directory is not a valid registry.")
     end
-    printstats(reg, Reg.regdir)
+    local regname = Cm.namedir(root)
+    --register package
+    local pkgname = arg[2]
+    if string.lower(pkgname) ~= string.lower(Git.namefromgiturl(url)) then
+        abort("Invalid arguments: package name is not consistent with git url.\n")
+    end
+    Reg.register{reg=regname, url=url}
+    printstats(regname, pkgname)
 else
-    abort()
+    abort("Invalid arguments: try signature: cosm registry add <giturl>.\n")
 end

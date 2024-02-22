@@ -79,7 +79,7 @@ function Pkg.add(args)
     local found = loadregistry(registry, pkg.dep.name)
     --case where pkgdep is not found in any of the registries
     if not found then
-        error("Package "..pkg.dep.name.."is not a registered package.\n\n")
+        error("Package "..pkg.dep.name.." is not a registered package.\n\n")
     end
     --check if version is present in registry
     pkg.dep.specs = registry.table.packages[pkg.dep.name]

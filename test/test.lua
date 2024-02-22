@@ -6,6 +6,6 @@ require("test.command")
 require("test.git")
 require("test.project")
 require("test.registry")
-require("test.integration")
+-- require("test.integration")
 
 os.exit(lu.LuaUnit.run())

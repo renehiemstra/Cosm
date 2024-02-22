@@ -73,13 +73,20 @@ init(){
 
 registry(){
     case "$1" in
-        add)    # registry add
+        init) # initialize a registry
             checkname $2
-            lua $COSM_DIR/cli/cmd-registry-add.lua "${@:2}"
+            lua $COSM_DIR/cli/cmd-registry-init.lua "${@:2}"
             ;;
-        rm)     # registry rm
+        add)  # add a package to the registry
+            lua $COSM_DIR/cli/cmd-registry-add.lua $PWD "${@:2}"
+            ;;
+        rm)   # registry rm
             checkname $2
-            lua $COSM_DIR/cli/cmd-registry-rm.lua "${@:2}"
+            lua $COSM_DIR/cli/cmd-registry-rm.lua $PWD "${@:2}"
+            ;;
+        delete)
+            checkname $2
+            lua $COSM_DIR/cli/cmd-registry-delete.lua "${@:2}"
             ;;
         *)      # default
             printf "cosm: '$1' is not a 'cosm registry' subcommand. See 'cosm --help'.\n \n"
@@ -88,6 +95,7 @@ registry(){
     esac
 }
 
+# cosm register
 release(){
     case "$1" in
         add)    # registry add

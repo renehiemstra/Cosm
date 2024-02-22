@@ -13,7 +13,7 @@ end
 local nargs = #arg
 if nargs==1 then
     local reg = arg[1]
-    if not pcall(Reg.rm, reg) then
+    if not pcall(Reg.delete, reg) then
         abort() --ToDo: better error message
     end
     printstats(reg, Reg.regdir)

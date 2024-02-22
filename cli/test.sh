@@ -11,7 +11,7 @@ cleanup_pkg(){
 cleanup_reg(){
     reg="$1"
     gh repo delete "$reg" --yes
-    cosm registry rm "$reg"
+    cosm registry delete "$reg"
 }
 
 # add a release to TestRegistry
@@ -21,7 +21,8 @@ release_add(){
     gh repo create "$pkg" --public
     git remote add origin git@github.com:renehiemstra/"$pkg".git
     git push --set-upstream origin main
-    cosm release add TestRegistry git@github.com:renehiemstra/"$pkg".git
+    cd "$DEPOT_PATH/registries/TestRegistry"
+    cosm registry add git@github.com:renehiemstra/"$pkg".git
 }
 # ToDo: add a check for validity of the git remote url
 
@@ -29,7 +30,7 @@ release_add(){
 runall(){
     # create registry
     gh repo create TestRegistry --public
-    cosm registry add TestRegistry git@github.com:renehiemstra/TestRegistry
+    cosm registry init TestRegistry git@github.com:renehiemstra/TestRegistry
 
     # root folder in which to create packages
     cd $DEPOT_PATH/dev

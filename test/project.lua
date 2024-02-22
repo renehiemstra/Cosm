@@ -2,11 +2,6 @@ local lu = require "luaunit"
 
 local Proj = require("src.project")
 
-function testIsProjTable()
-  local table = require("Project")
-  lu.assertTrue(Proj.isprojtable(table))
-end
-
 function testPkgCreate()
     Proj.create("MyPackage", "tmp")
     lu.assertTrue(Proj.ispkg("tmp/MyPackage"))
@@ -18,6 +13,7 @@ end
 function testReadWriteProjfile()
   Proj.create("MyPackage", "tmp")
   local table1 = require("tmp.MyPackage.Project")
+  lu.assertTrue(Proj.isprojtable(table1))
   Proj.save(table1, "tmpProject.lua", "tmp/MyPackage")
   local table2 = require("tmp.MyPackage.tmpProject")
 
