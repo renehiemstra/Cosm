@@ -98,9 +98,9 @@ registry(){
 # cosm register
 release(){
     case "$1" in
-        add)    # registry add
-            checkname $2
-            lua $COSM_DIR/cli/cmd-release.lua "${@:2}"
+        --patch|--minor|--major)    # registry add
+            release=$1
+            lua $COSM_DIR/cli/cmd-release.lua "${release:2}"
             ;;
 
         *)      # default

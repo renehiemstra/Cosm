@@ -54,6 +54,21 @@ function Reg.loadregistries(filename)
   return list
 end
 
+--find pkgname in known registries. Load name, path, and table to registry
+function Reg.loadregistry(registry, pkgname)
+  for _,regname in pairs(Reg.loadregistries("List.lua")) do
+      --load registry
+      registry.name = regname
+      registry.path = Reg.regdir.."/"..registry.name
+      registry.table = dofile(registry.path.."/Registry.lua")
+      --check if pkgname is present
+      if registry.table.packages[pkgname]~=nil then
+          return true --currently we break with the first encountered package
+      end
+  end
+  return false
+end
+
 --save all registries to List.lua
 function Reg.saveregistries(table, filename)
   if not type(table) == "table" then
@@ -189,27 +204,50 @@ end
 
 --initiates package specifics - assumes that input is already checked
 local function initpkgspecs(reg, pkg)
+  local root = reg.path.."/"..pkg.specpath
 
-  --create  .terra/registries/${reg}/${specpath}/Project.t 
-  local root = reg.path.."/"..pkg.specpath.."/"..pkg.table.version
-  local filename = "Specs.lua" --the version name is the main filename specifier
-  Cm.throw{cm="mkdir -p "..root}
-  Cm.throw{cm="touch "..root.."/"..filename}
-  
-  --write Project.t
-  local file = io.open(root.."/"..filename, "w")
+  --check if release does not already exist
+  if Cm.isfile(root.."/"..pkg.version.."/Specs.lua") then
+    error("Package version is already released")
+  end
+
+  --append pkg version to versions file
+  local versions = {}
+  if Cm.isfile(root.."/Versions.lua") then
+    versions = dofile(root.."/Versions.lua")
+  else
+    --add versions file if it does not exist yet
+    Cm.throw{cm="mkdir -p "..root, root="."}
+    Cm.throw{cm="touch Versions.lua", root=root}
+  end
+  table.insert(versions, pkg.version)
+  --write Versions.lua
+  local file = io.open(root.."/Versions.lua", "w")
   io.output(file)
+  io.write("Versions = {\n")
+  for i,v in pairs(versions) do
+    io.write(string.format("    %q,\n", v))
+  end
+  io.write("}\n")
+  io.write("return Versions")
+  io.close(file)
 
+  --create directory of new release and add specs file
+  Cm.throw{cm="mkdir -p "..root.."/"..pkg.version}
+  Cm.throw{cm="touch "..root.."/"..pkg.version.."/Specs.lua"}
+  --write Specs.lua
+  file = io.open(root.."/"..pkg.version.."/Specs.lua", "w")
+  io.output(file)
   --write main project data to file
   io.write("Project = {\n")
-  io.write(string.format("    name = %q,\n", pkg.table.name))
-  io.write(string.format("    uuid = %q,\n", pkg.table.uuid))
-  io.write(string.format("    version = %q,\n", pkg.table.version))
+  io.write(string.format("    name = %q,\n", pkg.name))
+  io.write(string.format("    uuid = %q,\n", pkg.uuid))
+  io.write(string.format("    version = %q,\n", pkg.version))
   io.write(string.format("    url  = %q,\n", pkg.url))
   io.write(string.format("    sha1 = %q,\n", pkg.sha1))
   --write dependencies
   io.write("    deps = ")
-  Base.serialize(pkg.table.deps, 2)
+  Base.serialize(pkg.deps, 2)
   io.write("}\n")
   io.write("return Project")
   io.close(file)
@@ -243,16 +281,15 @@ function Reg.register(args)
   registry.table = dofile(registry.path.."/Registry.lua")
 
   --initialize package properties
-  local pkg = {}
-  pkg.dir = Proj.terrahome.."/".."clones".."/"..Git.namefromgiturl(args.url)
-  pkg.table = dofile(pkg.dir.."/".."Project.lua")
-  pkg.name = pkg.table.name
+  local clonedir = Proj.terrahome.."/".."clones".."/"..Git.namefromgiturl(args.url)
+  local pkg = dofile(clonedir.."/".."Project.lua")
+  pkg.dir = clonedir
   pkg.url = args.url
   pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
   pkg.sha1 = Git.treehash(pkg.dir)
 
   --update registry pkg list and save
-  registry.table.packages[pkg.table.name] = { uuid = pkg.table.uuid, path = pkg.specpath}        
+  registry.table.packages[pkg.name] = { uuid = pkg.uuid, path = pkg.specpath}        
   Reg.save(registry.table, "Registry.lua", registry.path)
 
   --create pkg specs-list
@@ -317,64 +354,62 @@ function Reg.deregister(args)
   Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
 end
 
-function Reg.release(args)
+--release a new pkg version to the registry
+--signature: Reg.release{release=...("patch", "minor","major")}
+function Reg.release(pkgrelease)
   --check keyword argument `release`
-  local v = args.release
-  if not ((v=="patch") or (v=="minor") or (v=="major")) then
+  if not ((pkgrelease=="patch") or (pkgrelease=="minor") or (pkgrelease=="major")) then
     error("Provide `release` equal to \"patch\", \"minor\", or \"major\".\n\n")
-  end
-  --check keyword argument `reg`
-  if type(args.reg)~="string" then
-    error("Provide `reg` (registry) name as a string.\n\n")
-  end
-  --check if registry name points to a valid registry
-  if not Reg.isreg(Reg.regdir.."/"..args.reg) then
-    error("Directory does not follow registry specifications.\n")
   end
   --check if current directory is a valid package
   if not Proj.ispkg(".") then
     error("Current directory does not follow the specifications of a cosm pkg.\n")
   end
-
-  --initialize registry properties
+  --check if all work is added and committed
+  if not Git.nodiff(".") or not Git.nodiffstaged(".") then
+    error("Git repository has changes that are unstaged or uncommited. First stage and commit your work. Then release your package.\n")
+  end
+  --initialize package
+  local pkg = dofile("Project.lua")
+  pkg.dir = "."
+  --initialize registry
   local registry = {}
-  registry.name = args.reg
-  registry.path = Reg.regdir.."/"..registry.name
-  registry.table = dofile(registry.path.."/Registry.lua")
-
-  --initialize package properties
-  local pkg = {}
-  pkg.table = dofile("Project.lua")
-  pkg.name = pkg.table.name
-  pkg.url = args.url
-  pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
-  pkg.sha1 = Git.treehash(pkg.dir)
-
-  --throw error if package is not registered.
-  if registry.table.packages[pkg.name] == nil then
-    error("Package "..pkg.name.." is not registered in "..registry.name..".\n\n")
+  if not Reg.loadregistry(registry, pkg.name) then
+    error("Package "..pkg.name.." is not registered in any of the listed registries.")
   end
-
   --increase package version
-  local version = Semver.parse(pkg.table.version)
-  if args.release=="patch" then
-    version:nextPatch()
-  elseif args.release=="minor" then
-    version:nextMinor()
-  elseif args.release=="major" then
-    version:nextMajor()
+  local version = Semver.parse(pkg.version)
+  if pkgrelease=="patch" then
+    version = version:nextPatch()
+  elseif pkgrelease=="minor" then
+    version = version:nextMinor()
+  elseif pkgrelease=="major" then
+    version = version:nextMajor()
   end
-  pkg.table.version = tostring(version)
+  pkg.version = tostring(version)
+  pkg.url = Git.remotegeturl(".")
+  pkg.registry = registry.name
+  Proj.save(pkg, "Project.lua", ".")
 
   --create pkg specs-list
+  local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.version.."\""
+  Cm.throw{cm="git add .", root="."}
+  Cm.throw{cm="git commit -m "..commitmessage, root="."}
+  Cm.throw{cm="git tag v"..pkg.version, root="."}
+  pkg.sha1 = Git.treehash(pkg.dir)
+
+  --get specs and update them
+  local specs = registry.table.packages[pkg.name]
+  pkg.specpath = specs.path
   initpkgspecs(registry, pkg)
 
   --update registry remote git repository
-  local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.table.version.."\""
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
   Cm.throw{cm="git pull", root=registry.path}
   Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
+
+  return pkg --return all updated pkg info
 end
 
 return Reg

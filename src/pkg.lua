@@ -31,21 +31,6 @@ function Pkg.status()
     end
 end
 
---find pkgname in known registries. Load name, path, and table to registry
-local function loadregistry(registry, pkgname)
-    for _,regname in pairs(Reg.loadregistries("List.lua")) do
-        --load registry
-        registry.name = regname
-        registry.path = Reg.regdir.."/"..registry.name
-        registry.table = dofile(registry.path.."/Registry.lua")
-        --check if pkgname is present
-        if registry.table.packages[pkgname]~=nil then
-            return true --currently we break with the first encountered package
-        end
-    end
-    return false
-end
-
 --add a dependency to a project
 --signature Pkg.add{dep="...", version="xx.xx.xx"; root="."}
 function Pkg.add(args)
@@ -76,7 +61,7 @@ function Pkg.add(args)
     end
     --find pkgdep in known registries
     local registry = {} --{name, path, table}
-    local found = loadregistry(registry, pkg.dep.name)
+    local found = Reg.loadregistry(registry, pkg.dep.name)
     --case where pkgdep is not found in any of the registries
     if not found then
         error("Package "..pkg.dep.name.." is not a registered package.\n\n")

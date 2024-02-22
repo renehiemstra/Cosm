@@ -40,6 +40,11 @@ function Git.namefromgiturl(url)
     return string.sub(Cm.capturestdout("echo $(basename "..Base.esc(url)..")"), 1, -5)
 end
 
+--get the remote url
+function Git.remotegeturl(root)
+    return Cm.capturestdout("cd "..root.."; git remote get-url --push origin")
+end
+
 --add origin and push
 function Git.addremote(root, url)
     if not Git.validemptygitrepo(url) then
@@ -68,6 +73,17 @@ function Git.commit(root, message)
     os.execute(
         "cd "..root.."; "..
         "git commit -m ".."\""..message.."\"")
+end
+
+--check if all work has been added - 'git diff' returns empty
+function Git.nodiff(root)
+    local exitcode = Cm.capturestdout("cd "..root.."; git diff --exit-code &> /dev/null; echo $?")
+    return exitcode=="0"
+end
+--check if all work has been committed - 'git diff --staged' returns empty
+function Git.nodiffstaged(root)
+    local exitcode = Cm.capturestdout("cd "..root.."; git diff --staged --exit-code &> /dev/null; echo $?")
+    return exitcode=="0"
 end
 
 function Git.tag(root, version, message)

@@ -2,21 +2,19 @@ local Reg = require("src.registry")
 local Cm = require("src.command")
 
 local function abort()
-    print("Invalid option arguments: use `cosm release add <name> <giturl>`")
+    print("Invalid option arguments: use `cosm release --[patch,minor,major]")
     os.exit(1)
 end
 
 local function printstats(pkg)
-    print("Released "..pkg.name.." to "..pkg.reg..".\n")
+    print("Released "..pkg.name.." v"..pkg.version.." to "..pkg.registry.."\n")
 end
 
 --extract command line arguments
 local nargs = #arg
-if nargs==2 then
-    local pkg = {reg=arg[1], url=arg[2]}
-    Reg.register(pkg)
-    --abort() --ToDo: better error message
-    pkg.name = Cm.namedir(".")
+if nargs==1 then
+    local release = arg[1]
+    local pkg = Reg.release(release)
     printstats(pkg)
 else
     abort()

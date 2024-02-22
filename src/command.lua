@@ -62,12 +62,12 @@ function Cm.mkdir(dirname)
     os.execute("mkdir -p "..dirname)
 end
 
---make a directory if it does not exist yet
+--remove a directory
 function Cm.rmdir(dirname)
     os.execute("rm -rf "..dirname)
 end
 
---make a directory if it does not exist yet
+--make a file if it does not exist yet
 function Cm.touch(filename)
     os.execute("touch "..filename)
 end

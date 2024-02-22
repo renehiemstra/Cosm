@@ -8,7 +8,7 @@ local function abort(message)
 end
 
 local function printstats(registry, pkg)
-    print("Released package"..pkg.." to "..registry..".\n")
+    print("Registered package "..pkg.." to "..registry..".\n")
 end
 
 --extract command line arguments

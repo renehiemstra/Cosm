@@ -20,6 +20,8 @@ release_add(){
     cd "$DEPOT_PATH/dev/$pkg"
     gh repo create "$pkg" --public
     git remote add origin git@github.com:renehiemstra/"$pkg".git
+    git add .
+    git commit -m "<dep> added dependencies"
     git push --set-upstream origin main
     cd "$DEPOT_PATH/registries/TestRegistry"
     cosm registry add git@github.com:renehiemstra/"$pkg".git

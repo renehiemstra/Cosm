@@ -14,7 +14,7 @@ end
 local nargs = #arg
 if nargs==2 then
     local pkg = {reg=arg[1], url=arg[2]}
-    Reg.register(pkg)
+    Reg.release(args)
     --abort() --ToDo: better error message
     pkg.name = Cm.namedir(".")
     printstats(pkg)

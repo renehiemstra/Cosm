@@ -7,6 +7,7 @@ function testNameFromGitUrl()
   lu.assertEquals("MyPackage", Git.namefromgiturl("git@gitlab.com:group/subgroup/MyPackage.git"))
   lu.assertEquals("MyPackage", Git.namefromgiturl("https://gitlab.com/group/subgroup/MyPackage.git"))
   lu.assertEquals("MyPackage", Git.namefromgiturl("https://github.com/group/subgroup/MyPackage.git"))
+  lu.assertEquals(Git.remotegeturl("~/dev/Cosm"), "git@github.com:renehiemstra/Cosm.git")
 end
 
 function testValidGitRepo()
@@ -45,4 +46,4 @@ function testIgnoreFile()
   Cm.rmdir("tmp") --cleanup
 end
 
--- lu.LuaUnit.run()
+lu.LuaUnit.run()
