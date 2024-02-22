@@ -104,7 +104,7 @@ release(){
             ;;
 
         *)      # default
-            printf "cosm: '$1' is not a 'cosm release' subcommand. See 'cosm --help'.\n \n"
+            printf "cosm: '$1' is not a 'cosm release' option. See 'cosm --help'.\n \n"
             exit 1
             ;;
     esac
@@ -138,24 +138,24 @@ case "$1" in
     # Evaluate in root directory of a package. Add a dependency to a project with <name> and <version>
     add)
         checkname $2
-        lua $COSM_DIR/cli/cmd-dependency-add.lua $PWD "${@:2}"
+        lua $COSM_DIR/cli/cmd-add.lua $PWD "${@:2}"
         ;;
     
     # Evaluate in root directory of a package. Remove a dependency from a project with <name>
     rm)
         checkname $2
-        lua $COSM_DIR/cli/cmd-dependency-rm.lua $PWD "${@:2}"
+        lua $COSM_DIR/cli/cmd-rm.lua $PWD "${@:2}"
         ;;
 
     # Evaluate in root directory of a package. Upgrade a project dependency with <name> to <version>
     upgrade)
         checkname $2
-        lua $COSM_DIR/cli/cmd-dependency-upgrade.lua $PWD "${@:2}"
+        lua $COSM_DIR/cli/cmd-upgrade.lua $PWD "${@:2}"
         ;;
 
     downgrade)
         checkname $2
-        lua $COSM_DIR/cli/cmd-dependency-downgrade.lua $PWD "${@:2}"
+        lua $COSM_DIR/cli/cmd-downgrade.lua $PWD "${@:2}"
         ;;
 
     registry)       # cosm registry

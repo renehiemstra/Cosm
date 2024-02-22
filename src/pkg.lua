@@ -115,7 +115,6 @@ end
 --upgrade a package to a higher version
 --signature Pkg.upgrade{dep="...", version="xx.xx.xx"; root="."}
 function Pkg.upgrade(args)
-    local pkg = {}
     --check key-value arguments
     if type(args)~="table" then
         error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
@@ -125,24 +124,25 @@ function Pkg.upgrade(args)
         error("Provide table with `dep` (dependency) and `version` as a string.\n\n")
     end
     --set and check pkg root
-    pkg.root = "."
-    if args.root~=nil then
-        pkg.root = args.root
+    if args.root==nil then
+        args.root = "."
     end
-    if not Proj.ispkg(pkg.root) then
+    if not Proj.ispkg(args.root) then
         error("Current directory is not a valid package.")
     end
+    --initialize dependency
+    local dep = {name=args.dep, version=args.version}
+
     --initialize package properties
-    pkg.dep = {name=args.dep, version=args.version}
-    pkg.table = fetchprojecttable(pkg.root)
-    pkg.name = pkg.table.name
+    local pkg = fetchprojecttable(args.root)
+    pkg.root = args.root
     --cannot remove a package that is not a dependency
-    local oldversion = pkg.table.deps[pkg.dep.name]
+    local oldversion = pkg.deps[dep.name]
     if oldversion==nil then
         error("Provided package is not listed as a dependency.")
     end
     local v1 = Semver.parse(oldversion)
-    local v2 = Semver.parse(pkg.dep.version)
+    local v2 = Semver.parse(dep.version)
     if v1==v2 then
         error("Cannot upgrade: version already listed as a dependency.")
     elseif v1>v2 then
@@ -156,7 +156,6 @@ end
 --downgrade a package to a lower version
 --signature Pkg.downgrade{dep="...", version="xx.xx.xx"; root="."}
 function Pkg.downgrade(args)
-    local pkg = {}
     --check key-value arguments
     if type(args)~="table" then
         error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
@@ -166,24 +165,25 @@ function Pkg.downgrade(args)
         error("Provide table with `dep` (dependency) and `version` as a string.\n\n")
     end
     --set and check pkg root
-    pkg.root = "."
-    if args.root~=nil then
-        pkg.root = args.root
+    if args.root==nil then
+        args.root = "."
     end
-    if not Proj.ispkg(pkg.root) then
+    if not Proj.ispkg(args.root) then
         error("Current directory is not a valid package.")
     end
+    --initialize dependency
+    local dep = {name=args.dep, version=args.version}
+
     --initialize package properties
-    pkg.dep = {name=args.dep, version=args.version}
-    pkg.table = fetchprojecttable(pkg.root)
-    pkg.name = pkg.table.name
+    local pkg = fetchprojecttable(args.root)
+    pkg.root = args.root
     --cannot remove a package that is not a dependency
-    local oldversion = pkg.table.deps[pkg.dep.name]
+    local oldversion = pkg.deps[dep.name]
     if oldversion==nil then
         error("Provided package is not listed as a dependency.")
     end
     local v1 = Semver.parse(oldversion)
-    local v2 = Semver.parse(pkg.dep.version)
+    local v2 = Semver.parse(dep.version)
     if v1==v2 then
         error("Cannot downgrade: version already listed as a dependency.")
     elseif v1<v2 then

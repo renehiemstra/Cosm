@@ -14,8 +14,8 @@ cleanup_reg(){
     cosm registry delete "$reg"
 }
 
-# add a release to TestRegistry
-release_add(){
+# register pkg to TestRegistry
+registry_add(){
     pkg="$1"
     cd "$DEPOT_PATH/dev/$pkg"
     gh repo create "$pkg" --public
@@ -44,31 +44,50 @@ runall(){
     cosm init DepDep
 
     # release DepDep to TestRegistry
-    release_add DepDep
-
+    registry_add DepDep
+    # imagine we make some improvements to DepDep and
+    # we bring out several more versions
+    cd $DEPOT_PATH/dev/DepDep
+    cosm release --patch # v0.1.1
+    cosm release --minor # v0.2.0
+    cosm release --patch # v0.2.1
+    cosm release --major # v1.0.0
+    cosm release --patch # v1.0.1
+    
     # add dependency to DepA
     cd $DEPOT_PATH/dev/DepA
-    cosm add DepDep 0.1.0 
+    cosm add DepDep 0.2.0
+    cosm upgrade DepDep 0.2.1
     # release DepA to TestRegistry
-    release_add DepA
+    registry_add DepA
+    cd $DEPOT_PATH/dev/DepA
+    cosm release --minor # v0.2.0
 
     # add dependency to DepB
     cd $DEPOT_PATH/dev/DepB
-    cosm add DepDep 0.1.0 
+    cosm add DepDep 1.0.0 
     # release DepB to TestRegistry
-    release_add DepB
+    registry_add DepB
+    cd $DEPOT_PATH/dev/DepB
+    cosm release --patch # v0.1.1
 
     # add dependencies to Example
     cd $DEPOT_PATH/dev/Example
-    cosm add DepA 0.1.0 
-    cosm add DepB 0.1.0 
+    cosm add DepA 0.1.0
+    cosm add DepB 0.1.0
+    cosm upgrade DepA 0.2.0 
+    cosm upgrade DepB 0.1.1 
     
     # try to add and remove a package
-    cosm add DepDep 0.1.0
+    cosm add DepDep 0.2.1
+    cosm upgrade DepDep 1.0.0
+    cosm downgrade DepDep 0.2.1
     cosm rm DepDep
     
     # release DepB to TestRegistry
-    release_add Example
+    registry_add Example
+    cd $DEPOT_PATH/dev/Example
+    cosm release --minor # v0.2.0
     cd $DEPOT_PATH
 }
 
