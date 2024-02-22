@@ -13,7 +13,7 @@ function testIntegrationRegistryPkg()
     --create registry
     local registry = "ExampleRegistry"
     Conv.create_reg(registry)
-    lu.assertTrue(Reg.isreg(registry))
+    lu.assertTrue(Reg.isreg(Reg.regdir.."/"..registry))
 
     --create packages
     local projectdir = Proj.terrahome.."/tmp"
@@ -48,7 +48,7 @@ function testIntegrationRegistryPkg()
 
     --cleanup registry
     Conv.delete_reg(registry)
-    lu.assertFalse(Reg.isreg(registry))
+    lu.assertFalse(Reg.isreg(Reg.regdir.."/"..registry))
     lu.assertFalse(Reg.islisted(registry))
 
     --cleanup packages

@@ -9,6 +9,17 @@ local Reg = {}
 --terra directories
 Reg.regdir = Proj.terrahome.."/registries"
 
+local function fetchregistrytable(root)
+  return dofile(root.."/Registry.lua")
+end
+
+function Reg.getregistryspecs(root)
+  if not Reg.isreg(root) then
+    error("Not a registry")
+  end
+  return fetchregistrytable(root)
+end
+
 --check if table is a valid registry table
 function Reg.isregtable(table)
   for k,v in ipairs{name="string", uuid="string", url="string", description="string", packages="table"} do
@@ -20,18 +31,14 @@ function Reg.isregtable(table)
 end
 
 --check if root follows registry specifications
-function Reg.isreg(name)
-  if not type(name)=="string" then
-    error("Provide a string as input.")
-  end
-  local root = Reg.regdir.."/"..name
+function Reg.isreg(root)
   if not Cm.isdir(root) then
     return false
   end
   if not Cm.isfile(root.."/Registry.lua") then
     return false
   end
-  local table = dofile(Reg.regdir.."/"..name.."/Registry.lua")
+  local table = dofile(root.."/Registry.lua")
   return Reg.isregtable(table)
 end
 
@@ -222,7 +229,7 @@ function Reg.register(args)
     error("Provide package git `url` as a string")
   end
   --check if registry name points to a valid registry
-  if not Reg.isreg(args.reg) then
+  if not Reg.isreg(Reg.regdir.."/"..args.reg) then
     error("Directory does not follow registry specifications.\n")
   end
   --download pkg associated with git url (error checking is done therein)
@@ -269,7 +276,7 @@ function Reg.release(args)
     error("Provide `reg` (registry) name as a string.\n\n")
   end
   --check if registry name points to a valid registry
-  if not Reg.isreg(args.reg) then
+  if not Reg.isreg(Reg.regdir.."/"..args.reg) then
     error("Directory does not follow registry specifications.\n")
   end
   --check if current directory is a valid package

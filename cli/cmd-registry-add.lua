@@ -1,24 +1,23 @@
 local Reg = require("src.registry")
+local Cm = require("src.command")
 
 local function abort()
-    print("Invalid option arguments: use `cosm registry add <name> <giturl>`")
+    print("Invalid option arguments: use `cosm release add <name> <giturl>`")
     os.exit(1)
 end
 
-local function printstats(name, root)
-    print("Created registry "..name.." in "..root)
+local function printstats(pkg)
+    print("Released "..pkg.name.." to "..pkg.reg..".\n")
 end
 
 --extract command line arguments
 local nargs = #arg
 if nargs==2 then
-    local registry = {}
-    registry.name = arg[1]
-    registry.url = arg[2]
-    if not pcall(Reg.create, registry) then
-        abort() --ToDo: better error message
-    end
-    printstats(registry.name, Reg.regdir)
+    local pkg = {reg=arg[1], url=arg[2]}
+    Reg.register(pkg)
+    --abort() --ToDo: better error message
+    pkg.name = Cm.namedir(".")
+    printstats(pkg)
 else
     abort()
 end

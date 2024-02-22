@@ -28,8 +28,8 @@ function testSaveRegistry()
     lu.assertEquals(table1.uuid, table2.uuid)
     os.execute("rm tmpRegistry.lua")
 
-    lu.assertTrue(Reg.isreg("ExampleRegistry"))
-    lu.assertFalse(Reg.isreg("RegistryDoesntExist"))
+    lu.assertTrue(Reg.isreg(Reg.regdir.."/ExampleRegistry"))
+    lu.assertFalse(Reg.isreg(Reg.regdir.."/RegistryDoesntExist"))
 
     --cleanup registry
     Conv.delete_reg("ExampleRegistry")
@@ -44,7 +44,7 @@ function testIsListed()
 end
 
 function testIsRemoved()
-    lu.assertFalse(Reg.isreg("ExampleRegistry"))
+    lu.assertFalse(Reg.isreg(Reg.regdir.."/ExampleRegistry"))
     lu.assertFalse(Reg.islisted("ExampleRegistry"))
 end
 
