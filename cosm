@@ -45,9 +45,9 @@ create_depot(){
     
         # append COSM_DEPOT_PATH to the LUA_PATH and add to your profile
         if [ -z "${LUA_PATH}" ]; then
-            echo "export LUA_PATH=\"${depotpath}/?.lua;${COSM_DIR}/../src/?.lua;\"" >> ${prof}
+            echo "export LUA_PATH=\"${depotpath}/?.lua;${COSM_DIR}/?.lua;;\"" >> ${prof}
         else
-            echo "export LUA_PATH=\"${depotpath}/?.lua;${COSM_DIR}/../src/?.lua;${LUA_PATH}\"" >> ${prof}
+            echo "export LUA_PATH=\"${depotpath}/?.lua;${COSM_DIR}/?.lua;${LUA_PATH}\"" >> ${prof}
         fi
         echo "Open a new terminal window to continue."
         exit 0
@@ -81,32 +81,6 @@ registry(){
             checkname $2
             lua $COSM_DIR/cli/cmd-registry-rm.lua "${@:2}"
             ;;
-        *)      # default
-            printf "cosm: '$1' is not a 'cosm registry' subcommand. See 'cosm --help'.\n \n"
-            exit 1
-            ;;
-    esac
-}
-
-dependency(){
-    case "$1" in
-        add)    # registry add
-            checkname $2
-            lua $COSM_DIR/cli/cmd-dependency-add.lua $PWD "${@:2}"
-            ;;
-        rm)
-            checkname $2
-            lua $COSM_DIR/cli/cmd-dependency-rm.lua $PWD "${@:2}"
-            ;;
-
-        upgrade)
-            checkname $2
-            ;;
-
-        downgrade)
-            checkname $2
-            ;;
-
         *)      # default
             printf "cosm: '$1' is not a 'cosm registry' subcommand. See 'cosm --help'.\n \n"
             exit 1
@@ -153,12 +127,31 @@ case "$1" in
         init "${@:2}" 
         ;;
 
-    registry)       # cosm registry
-        registry "${@:2}"
+    # Evaluate in root directory of a package. Add a dependency to a project with <name> and <version>
+    add)
+        checkname $2
+        lua $COSM_DIR/cli/cmd-dependency-add.lua $PWD "${@:2}"
+        ;;
+    
+    # Evaluate in root directory of a package. Remove a dependency from a project with <name>
+    rm)
+        checkname $2
+        lua $COSM_DIR/cli/cmd-dependency-rm.lua $PWD "${@:2}"
         ;;
 
-    dependency)     # cosm dependency
-        dependency "${@:2}"
+    # Evaluate in root directory of a package. Upgrade a project dependency with <name> to <version>
+    upgrade)
+        checkname $2
+        lua $COSM_DIR/cli/cmd-dependency-upgrade.lua $PWD "${@:2}"
+        ;;
+
+    downgrade)
+        checkname $2
+        lua $COSM_DIR/cli/cmd-dependency-downgrade.lua $PWD "${@:2}"
+        ;;
+
+    registry)       # cosm registry
+        registry "${@:2}"
         ;;
 
     release)         # cosm release

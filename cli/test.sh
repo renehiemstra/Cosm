@@ -25,9 +25,8 @@ release_add(){
 }
 # ToDo: add a check for validity of the git remote url
 
-run=true
-clean=true
-if $run; then
+# code that runs the test
+runall(){
     # create registry
     gh repo create TestRegistry --public
     cosm registry add TestRegistry git@github.com:renehiemstra/TestRegistry
@@ -46,35 +45,58 @@ if $run; then
 
     # add dependency to DepA
     cd $DEPOT_PATH/dev/DepA
-    cosm dependency add DepDep 0.1.0 
+    cosm add DepDep 0.1.0 
     # release DepA to TestRegistry
     release_add DepA
 
     # add dependency to DepB
     cd $DEPOT_PATH/dev/DepB
-    cosm dependency add DepDep 0.1.0 
+    cosm add DepDep 0.1.0 
     # release DepB to TestRegistry
     release_add DepB
 
     # add dependencies to Example
     cd $DEPOT_PATH/dev/Example
-    cosm dependency add DepA 0.1.0 
-    cosm dependency add DepB 0.1.0 
+    cosm add DepA 0.1.0 
+    cosm add DepB 0.1.0 
     
     # try to add and remove a package
-    cosm dependency add DepDep 0.1.0
-    cosm dependency rm DepDep
+    cosm add DepDep 0.1.0
+    cosm rm DepDep
     
     # release DepB to TestRegistry
     release_add Example
     cd $DEPOT_PATH
-fi
+}
 
-# cleanup packages and registry
-if $clean; then
+cleanall(){
     cleanup_pkg Example
     cleanup_pkg DepA
     cleanup_pkg DepB
     cleanup_pkg DepDep
     cleanup_reg TestRegistry
+}
+
+# no input arguments - run test and cleanup
+if [ "$#" == 0 ]; then
+    runall
+    cleanall
 fi
+
+# run test  or cleanup
+if [ "$#" == 1 ]; then
+    case "$1" in
+        --run)
+            runall
+            ;;
+        --clean)
+            cleanall
+            ;;
+        *)
+            printf "Wrong input arguments. Prodide '--run' and or 'clean'. \n \n"
+            exit 1
+            ;;
+    esac
+fi
+
+exit 0

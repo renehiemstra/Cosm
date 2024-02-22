@@ -1,6 +1,6 @@
-local Base = require("base")
-local Cm = require("command")
-local Git = require("git")
+local Base = require("src.base")
+local Cm = require("src.command")
+local Git = require("src.git")
 
 local Proj = {}
 

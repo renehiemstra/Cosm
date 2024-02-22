@@ -1,7 +1,5 @@
 local lu = require "luaunit"
-
-local pkgdir = "dev.Pkg.src."
-local Cm = require(pkgdir.."command")
+local Cm = require("src.command")
 
 function testSuccess()
     os.execute("mkdir tmp; touch tmp/tmp.lua")
@@ -17,23 +15,23 @@ function testGetFileExtension()
 end
 
 function testIsFile()
-    lu.assertTrue(Cm.isfile(".gitignore"))
-    lu.assertTrue(Cm.isfile("Project.lua"))
-    lu.assertTrue(Cm.isfile("src/command.lua"))
-    lu.assertFalse(Cm.isfile("src/invalid.lua"))
+    lu.assertTrue(Cm.isfile("../.gitignore"))
+    lu.assertTrue(Cm.isfile("../README.md"))
+    lu.assertTrue(Cm.isfile("../src/command.lua"))
+    lu.assertFalse(Cm.isfile("../src/invalid.lua"))
 end
 
 function testIsDir()
     lu.assertTrue(Cm.isdir("."))
-    lu.assertTrue(Cm.isdir("src"))
-    lu.assertTrue(Cm.isdir("test"))
+    lu.assertTrue(Cm.isdir("../src"))
+    lu.assertTrue(Cm.isdir("../test"))
     lu.assertFalse(Cm.isdir("invalid"))
 end
 
 function testWorkDir()
-    local depotpath = Cm.capturestdout("echo $TERRA_PKG_ROOT")
-    lu.assertEquals(Cm.currentworkdir(), depotpath.."/dev/Pkg")
-    lu.assertEquals(Cm.namedir("."), "Pkg")
+    local home = Cm.capturestdout("echo $HOME")
+    lu.assertEquals(Cm.currentworkdir(), home.."/dev/Cosm/test")
+    lu.assertEquals(Cm.namedir("."), "test")
 end
 
 function testMkDir()

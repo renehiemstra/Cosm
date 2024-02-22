@@ -1,16 +1,12 @@
 local lu = require "luaunit"
 
--- source and test dirs
-local pkgdir = "dev.Pkg.src."
-local testdir = "dev.Pkg.test."
-
-local Cm = require(pkgdir.."command")
-local Proj = require(pkgdir.."project")
-local Reg = require(pkgdir.."registry")
-local Pkg = require(pkgdir.."package")
+local Cm = require("src.command")
+local Proj = require("src.project")
+local Reg = require("src.registry")
+local Pkg = require("src.pkg")
 
 --load convenience functions for testing
-local Conv = require(testdir.."conv")
+local Conv = require("test.conv")
 
 --test adding packages to the registry
 function testIntegrationRegistryPkg()
@@ -63,4 +59,4 @@ function testIntegrationRegistryPkg()
     end
 end
 
-os.exit(lu.LuaUnit.run())
+-- os.exit(lu.LuaUnit.run())

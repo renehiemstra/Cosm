@@ -1,7 +1,6 @@
 local lu = require "luaunit"
 
-local pkgdir = "dev.Pkg.src."
-local Proj = require(pkgdir.."project")
+local Proj = require("src.project")
 
 function testIsProjTable()
   local table = require("Project")

@@ -1,4 +1,5 @@
 local Pkg = require("src.pkg")
+local Semver = require("src.semver")
 
 local function abort()
     print("Invalid option arguments: use `cosm dependency add <name> <version>`")
@@ -13,6 +14,9 @@ end
 local nargs = #arg
 if nargs==3 then
     local args = {root=arg[1], dep=arg[2], version=arg[3]}
+    local v_new = Semver.parse(args.version)
+    
+
     Pkg.add(args)
     printstats(args.dep, args.version)
 else

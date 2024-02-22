@@ -1,8 +1,10 @@
 local lu = require "luaunit"
 
-local pkgdir = "dev.Pkg.src."
-local Cm = require(pkgdir.."command")
-local Reg = require(pkgdir.."registry")
+local Cm = require("src.command")
+local Reg = require("src.registry")
+
+--load convenience functions for testing
+local Conv = require("test.conv")
 
 function testLoadRegistries()
     local registries = {"R1", "R2", "R3"}
@@ -15,18 +17,22 @@ function testLoadRegistries()
 end
 
 function testSaveRegistry()
-    local table1 = require "registries.MyRegistry.Registry"
-    Reg.save(table1, "tmpRegistry.lua", ".")
-    local table2 = require "tmpRegistry"
+    Conv.create_reg("ExampleRegistry")
 
-    lu.assertTrue(table1.name == "MyRegistry" and table2.name=="MyRegistry")
+    local table1 = require("registries.ExampleRegistry.Registry")
+    print(table1)
+    Reg.save(table1, "tmpRegistry.lua", ".")
+    local table2 = require("tmpRegistry")
+
+    lu.assertTrue(table1.name == "ExampleRegistry" and table2.name=="ExampleRegistry")
     lu.assertEquals(table1.uuid, table2.uuid)
     os.execute("rm tmpRegistry.lua")
-end
 
-function testIsRegistry()
-    lu.assertTrue(Reg.isreg("MyRegistry"))
+    lu.assertTrue(Reg.isreg("ExampleRegistry"))
     lu.assertFalse(Reg.isreg("RegistryDoesntExist"))
+
+    --cleanup registry
+    Conv.delete_reg("ExampleRegistry")
 end
 
 function testIsListed()
@@ -37,4 +43,9 @@ function testIsListed()
     lu.assertFalse(Reg.islisted(registry))
 end
 
-lu.LuaUnit.run()
+function testIsRemoved()
+    lu.assertFalse(Reg.isreg("ExampleRegistry"))
+    lu.assertFalse(Reg.islisted("ExampleRegistry"))
+end
+
+-- lu.LuaUnit.run()

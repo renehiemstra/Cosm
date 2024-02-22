@@ -1,7 +1,6 @@
 local lu = require "luaunit"
 
-local pkgdir = "dev.Pkg.src."
-local Semver = require(pkgdir.."semver")
+local Semver = require("src.semver")
 
 function testParse()
     local version = Semver.parse("2.11.3")

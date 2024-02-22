@@ -1,5 +1,5 @@
-local Cm = require("command")
-local Base = require("base")
+local Cm = require("src.command")
+local Base = require("src.base")
 
 local Git = {}
 Git.user = {}
@@ -26,6 +26,15 @@ function Git.validgitrepo(url)
     return exitcode=="0" or exitcode=="2"
 end
 
+--check if we are dealing with a possible git url
+function Git.isgiturl(string)
+    if type(string)~="string" then
+        return false
+    else
+        return string.sub(string, -4)==".git"
+    end
+end
+
 --extract the pkg name from the git url
 function Git.namefromgiturl(url)
     return string.sub(Cm.capturestdout("echo $(basename "..Base.esc(url)..")"), 1, -5)
@@ -48,7 +57,6 @@ function Git.init(root, commitmessage)
     Cm.throw{cm="git add .", root=root}
     Cm.throw{cm="git commit -m \""..commitmessage.."\"", root=root}
 end
-
 
 function Git.add(root, options)
     os.execute(

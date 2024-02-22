@@ -1,4 +1,4 @@
-local Proj = require("project")
+local Proj = require("src.project")
 
 local function abort()
     print("Invalid option arguments: use `cosm init <name> --lang lua`")

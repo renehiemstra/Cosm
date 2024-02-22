@@ -1,4 +1,4 @@
-local Reg = require("registry")
+local Reg = require("src.registry")
 
 local function abort()
     print("Invalid arguments: use 'cosm registry rm <name>'")

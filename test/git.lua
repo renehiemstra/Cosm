@@ -1,8 +1,7 @@
 local lu = require "luaunit"
 
-local pkgdir = "dev.Pkg.src."
-local Git = require(pkgdir.."git")
-local Cm = require(pkgdir.."command")
+local Git = require("src.git")
+local Cm = require("src.command")
 
 function testNameFromGitUrl()
   lu.assertEquals("MyPackage", Git.namefromgiturl("git@gitlab.com:group/subgroup/MyPackage.git"))
@@ -11,6 +10,11 @@ function testNameFromGitUrl()
 end
 
 function testValidGitRepo()
+
+  lu.assertTrue(Git.isgiturl("git@github.com:terralang/terra.git"))
+  lu.assertFalse(Git.isgiturl("git@github.com:terralang/terra.gi"))
+  lu.assertFalse(Git.isgiturl(1))
+  lu.assertFalse(Git.isgiturl("a"))
 
   lu.assertTrue(Git.validgitrepo("git@github.com:terralang/terra.git"))
   lu.assertFalse(Git.validgitrepo("git@github.com:terralang/terra.gi"))    

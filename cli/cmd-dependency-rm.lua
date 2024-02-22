@@ -1,4 +1,4 @@
-local Pkg = require("pkg")
+local Pkg = require("src.pkg")
 
 local function abort()
     print("Invalid option arguments: use 'cosm dependency rm <name>'")

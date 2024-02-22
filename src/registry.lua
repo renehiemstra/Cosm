@@ -1,8 +1,8 @@
-local Base = require("base")
-local Cm   = require("command")
-local Git  = require("git")
-local Proj = require("project")
-local Semver  = require("semver")
+local Base = require("src.base")
+local Cm   = require("src.command")
+local Git  = require("src.git")
+local Proj = require("src.project")
+local Semver = require("src.semver")
 
 local Reg = {}
 
@@ -272,9 +272,9 @@ function Reg.release(args)
   if not Reg.isreg(args.reg) then
     error("Directory does not follow registry specifications.\n")
   end
-  --check of current directory is a valid package
+  --check if current directory is a valid package
   if not Proj.ispkg(".") then
-    error("Current directory does not follow the specifications of a terra pkg.\n")
+    error("Current directory does not follow the specifications of a cosm pkg.\n")
   end
 
   --initialize registry properties
@@ -293,7 +293,7 @@ function Reg.release(args)
 
   --throw error if package is not registered.
   if registry.table.packages[pkg.name] == nil then
-    error("Package "..pkg.name.." is not a registered in "..registry.name..".\n\n")
+    error("Package "..pkg.name.." is not registered in "..registry.name..".\n\n")
   end
 
   --increase package version

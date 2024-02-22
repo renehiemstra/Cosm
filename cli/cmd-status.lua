@@ -1,1 +1,4 @@
-print("Package status - not implemented")
+local Pkg = require("src.pkg")
+
+--run package status
+Pkg.status()

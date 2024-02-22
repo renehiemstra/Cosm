@@ -1,7 +1,6 @@
-local pkgdir = "dev.Pkg.src." --path relative to .terra
-local Cm = require(pkgdir.."command")
-local Proj = require(pkgdir.."project")
-local Reg = require(pkgdir.."registry")
+local Cm = require("src.command")
+local Proj = require("src.project")
+local Reg = require("src.registry")
 
 --convenience functions for testing
 local Conv = {}
