@@ -73,6 +73,10 @@ init(){
 
 registry(){
     case "$1" in
+        status)
+            checkname $2
+            lua $COSM_DIR/cli/cmd-registry-status.lua "${@:2}"
+            ;;
         init) # initialize a registry
             checkname $2
             lua $COSM_DIR/cli/cmd-registry-init.lua "${@:2}"

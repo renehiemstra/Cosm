@@ -43,11 +43,11 @@ function Reg.isreg(root)
 end
 
 --load all registries listed in List.lua
-function Reg.loadregistries(filename)
-  if not Cm.isfile(Reg.regdir.."/"..filename) then
+function Reg.loadregistries()
+  if not Cm.isfile(Reg.regdir.."/List.lua") then
     error("List.lua does not exist.\n\n")
   end
-  local list = dofile(Reg.regdir.."/"..filename)
+  local list = dofile(Reg.regdir.."/List.lua")
   if not type(list)=="table" then
     error("List.lua should return a table with containing the names of all registries.\n\n")
   end
@@ -56,7 +56,7 @@ end
 
 --find pkgname in known registries. Load name, path, and table to registry
 function Reg.loadregistry(registry, pkgname)
-  for _,regname in pairs(Reg.loadregistries("List.lua")) do
+  for _,regname in pairs(Reg.loadregistries()) do
       --load registry
       registry.name = regname
       registry.path = Reg.regdir.."/"..registry.name
@@ -71,14 +71,14 @@ function Reg.loadregistry(registry, pkgname)
 end
 
 --save all registries to List.lua
-function Reg.saveregistries(table, filename)
+function Reg.saveregistries(table)
   if not type(table) == "table" then
     error("Not a lua table.\n\n")
   end
-  if not Cm.isfile(Reg.regdir.."/"..filename) then
-    Cm.throw{cm="touch "..filename, root=Reg.regdir}
+  if not Cm.isfile(Reg.regdir.."/List.lua") then
+    Cm.throw{cm="touch List.lua", root=Reg.regdir}
   end
-  local file = io.open(Reg.regdir.."/"..filename, "w")
+  local file = io.open(Reg.regdir.."/List.lua", "w")
   io.output(file)
   io.write("local List = {\n")
   for k,v in pairs(table) do
@@ -90,7 +90,7 @@ end
 
 --check if registry is listed in List.lua
 function Reg.islisted(registry)
-  for _,listedreg in ipairs(Reg.loadregistries("List.lua")) do
+  for _,listedreg in ipairs(Reg.loadregistries()) do
     if listedreg==registry then
       return true
     end
@@ -100,21 +100,42 @@ end
 
 --add registry name to the list
 function Reg.addtolist(registry)
-  local list = Reg.loadregistries("List.lua")
+  local list = Reg.loadregistries()
   table.insert(list, registry)
-  Reg.saveregistries(list, "List.lua")
+  Reg.saveregistries(list)
 end
 
 --add registry name to the list
 function Reg.rmfromlist(registry)
-  local list = Reg.loadregistries("List.lua")
+  local list = Reg.loadregistries()
   for i,v in ipairs(list) do
     if v==registry then
       table.remove(list, i)
       break
     end
   end
-  Reg.saveregistries(list, "List.lua")
+  Reg.saveregistries(list)
+end
+
+function Reg.registry_status(root)
+  if not Reg.isreg(root) then
+    error("Root directory is not a regisrtry.")
+  end
+  local registry = dofile(root.."/".."Registry.lua")
+  print()
+  print(registry.name..": "..registry.description)
+  local npkg = 0
+  local pkglist = {}
+  for pkg, data in pairs(registry.packages) do
+    npkg = npkg + 1
+    table.insert(pkglist, pkg)
+  end
+  print("Status: "..npkg.." registered packages")
+  table.sort(pkglist)
+  for i, pkg in pairs(pkglist) do
+    print("  "..pkg)
+  end
+  print()
 end
 
 --save `regtable` to a Registry.lua file

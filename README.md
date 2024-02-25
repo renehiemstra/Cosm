@@ -17,16 +17,16 @@ cosm status                             (implemented)
 ```
 *Gives an overview of a package when evaluated in the root of a package.*
 ```
-cosm registry status                    (not implemented)
+cosm registry status <registry name>                    (implemented)
 ```
-*Gives an overview of a registry when evaluated in the root of a registry.*
+*Gives an overview of the packages registered to the registry. Can be evaluated anywhere.*
 
 ## instantiate a new package
 ```
 cosm init <name>                        (implemented)
 cosm init <name> -t <template>          (not implemented)
 cosm init <name> --template <template>  (not implemented)
-```
+```p
 *Evaluate in parent folder of a new package. Adds a new package with name <name> according to a template (in .cosm/templates). Currently, only a lua template is implemented.*
 
 ## instantiate a new registry
