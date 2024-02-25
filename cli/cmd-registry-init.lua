@@ -15,9 +15,7 @@ if nargs==2 then
     local registry = {}
     registry.name = arg[1]
     registry.url = arg[2]
-    if not pcall(Reg.create, registry) then
-        abort() --ToDo: better error message
-    end
+    Reg.create(registry)
     printstats(registry.name, Reg.regdir)
 else
     abort()

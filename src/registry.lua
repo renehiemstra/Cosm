@@ -60,6 +60,7 @@ function Reg.loadregistry(registry, pkgname)
       --load registry
       registry.name = regname
       registry.path = Reg.regdir.."/"..registry.name
+      Cm.throw{cm="git pull", root=registry.path} --pull changes from remote
       registry.table = dofile(registry.path.."/Registry.lua")
       --check if pkgname is present
       if registry.table.packages[pkgname]~=nil then
@@ -142,6 +143,7 @@ function Reg.save(regtable, regfile, root)
 end
 
 --create a registry
+--signature: Reg.create{name=..., url=...}
 function Reg.create(registry)
   --check keyword arguments
   if registry.name==nil or registry.url==nil then
@@ -152,45 +154,31 @@ function Reg.create(registry)
   elseif type(registry.url)~="string" then
     error("Provide git `url` as a string.\n")
   end
-
   --check if a registry with that name already exists
   if Reg.islisted(registry) then
     error("A registry with name "..registry.." already exists.\n\n")
   end
-
   --Throw an error if url is not valid
   if not Git.validemptygitrepo(registry.url) then
     error("Provide an empty git repository.\n")
   end
-
-  --path to registry root
-  local root = Reg.regdir.."/"..registry.name
-
+  --initialize registry {name, url, path, etc}
+  registry.path = Reg.regdir.."/"..registry.name
+  registry.uuid = Proj.uuid()
+  registry.description = "Cosm local package registry"
+  registry.packages = {}
   --generate registry folder
-  Cm.throw{cm="mkdir -p "..root}
-
+  Cm.throw{cm="mkdir -p "..registry.path}
   --generate .ignore file
-  Git.ignore(root, {".DS_Store", ".vscode"})
-
-  --generate Registry.toml
-  local file = io.open(root.."/Registry.lua", "w")
-  file:write("Registry = {\n")
-  file:write("    name = \""..registry.name.."\",\n")
-  file:write("    uuid = \""..Proj.uuid().."\",\n")
-  file:write("    url  = \""..registry.url.."\",\n")
-  file:write("    description = \""..registry.name.." local package registry\",\n")
-  file:write("    packages = {}\n")
-  file:write("}\n")
-  file:write("return Registry")
-  file:close()
-
+  Git.ignore(registry.path, {})
+  --generate Registry.lua file
+  Reg.save(registry, "Registry.lua", registry.path)
   --create git repo and push to origin
-  Cm.throw{cm="git init", root=root}
-  Cm.throw{cm="git add .", root=root}
-  Cm.throw{cm="git commit -m \"Initialized new registry.\"", root=root}
-  Cm.throw{cm="git remote add origin "..registry.url, root=root}
-  Cm.throw{cm="git push --set-upstream origin main", root=root}
-
+  Cm.throw{cm="git init", root=registry.path}
+  Cm.throw{cm="git add .", root=registry.path}
+  Cm.throw{cm="git commit -m \"Initialized new registry.\"", root=registry.path}
+  Cm.throw{cm="git remote add origin "..registry.url, root=registry.path}
+  Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
   --add name of registry to the list of registries
   Reg.addtolist(registry.name)
 end
@@ -253,6 +241,17 @@ local function initpkgspecs(reg, pkg)
   io.close(file)
 end
 
+function Reg.update(registry)
+  if registry~="string" then
+    error("Provide registry name.\n")
+  end
+  if not Reg.islisted(registry) then
+    error("Not a valid registry.")
+  end
+  --update git repository
+  Cm.throw{cm="git pull", root=Reg.regdir.."/"..registry}
+end
+
 --register a package to a registry
 --signature Reg.register{reg=..., url=...}
 function Reg.register(args)
@@ -272,7 +271,9 @@ function Reg.register(args)
     error("Directory does not follow registry specifications.\n")
   end
   --download pkg associated with git url (error checking is done therein)
-  Proj.clone{root=Proj.terrahome.."/".."clones", url=args.url}
+  local tmpdir = Proj.terrahome.."/clones/.tmp"
+  Cm.throw{cm="rm -rf "..tmpdir}
+  Proj.clone{name="tmp-cloned-pkg", url=args.url, root=tmpdir}
 
   --initialize registry properties
   local registry = {}
@@ -280,21 +281,35 @@ function Reg.register(args)
   registry.path = Reg.regdir.."/"..registry.name
   registry.table = dofile(registry.path.."/Registry.lua")
 
+  --copy package from tmp folder to .cosm/clones/<uuid>
+  local src = tmpdir.."/tmp-cloned-pkg"
+  local pkg = dofile(src.."/".."Project.lua")
+  local dest = Proj.terrahome.."/clones/"..pkg.uuid
+  --copy package to .cosm/clones/<uuid>
+  Cm.throw{cm="cp -r "..src.." "..dest}
+  Cm.throw{cm="rm -rf "..tmpdir}
+  
+  print("mv files from "..src.." to "..dest)
+  print(Proj.uuid())
+  print(Proj.uuid())
+  print(Proj.uuid())
+  print(Proj.uuid())
+  
   --initialize package properties
-  local clonedir = Proj.terrahome.."/".."clones".."/"..Git.namefromgiturl(args.url)
-  local pkg = dofile(clonedir.."/".."Project.lua")
-  pkg.dir = clonedir
+  pkg.dir = dest
   pkg.url = args.url
   pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
-  pkg.sha1 = Git.treehash(pkg.dir)
-
+  pkg.sha1 = Git.hash(pkg.dir)
+  --push git tags
+  print("tagging "..pkg.name.." version "..pkg.version.." url "..pkg.url)
+  print("directory "..pkg.dir)
+  Cm.throw{cm="git tag v"..pkg.version, root=pkg.dir }
+  Cm.throw{cm="git push origin v"..pkg.version, root=pkg.dir }
   --update registry pkg list and save
   registry.table.packages[pkg.name] = { uuid = pkg.uuid, path = pkg.specpath}        
   Reg.save(registry.table, "Registry.lua", registry.path)
-
   --create pkg specs-list
   initpkgspecs(registry, pkg)
-
   --update registry remote git repository
   local commitmessage = "\"<new package> "..pkg.name.."\""
   Cm.throw{cm="git add .", root=registry.path}
@@ -305,54 +320,8 @@ end
 
 --register a package to a registry
 --signature Reg.register{reg=..., pkg=..., version=...}
-function Reg.deregister(args)
-  --check keyword arguments
-  if args.reg==nil then
-    error("Provide `reg` (registry) name.\n")
-  elseif args.pkg==nil then
-    error("Provide package `name`.\n")
-  end
-  if type(args.reg)~="string" then
-    error("Provide `reg` (registry) name as a string.\n")
-  elseif not Git.validnonemptygitrepo(args.url) then
-    error("Provide package git `url` as a string")
-  end
-  --check if registry name points to a valid registry
-  if not Reg.isreg(Reg.regdir.."/"..args.reg) then
-    error("Directory does not follow registry specifications.\n")
-  end
-  --download pkg associated with git url (error checking is done therein)
-  Proj.clone{root=Proj.terrahome.."/".."clones", url=args.url}
-
-  --initialize registry properties
-  local registry = {}
-  registry.name = args.reg
-  registry.path = Reg.regdir.."/"..registry.name
-  registry.table = dofile(registry.path.."/Registry.lua")
-
-  --initialize package properties
-  local pkg = {}
-  pkg.dir = Proj.terrahome.."/".."clones".."/"..Git.namefromgiturl(args.url)
-  pkg.table = dofile(pkg.dir.."/".."Project.lua")
-  pkg.name = pkg.table.name
-  pkg.url = args.url
-  pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
-  pkg.sha1 = Git.treehash(pkg.dir)
-
-  --update registry pkg list and save
-  registry.table.packages[pkg.table.name] = { uuid = pkg.table.uuid, path = pkg.specpath}        
-  Reg.save(registry.table, "Registry.lua", registry.path)
-
-  --create pkg specs-list
-  initpkgspecs(registry, pkg)
-
-  --update registry remote git repository
-  local commitmessage = "\"<new package> "..pkg.name.."\""
-  Cm.throw{cm="git add .", root=registry.path}
-  Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
-  Cm.throw{cm="git pull", root=registry.path}
-  Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
-end
+-- function Reg.deregister(args)
+-- end
 
 --release a new pkg version to the registry
 --signature: Reg.release{release=...("patch", "minor","major")}
@@ -395,8 +364,10 @@ function Reg.release(pkgrelease)
   local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.version.."\""
   Cm.throw{cm="git add .", root="."}
   Cm.throw{cm="git commit -m "..commitmessage, root="."}
+  Cm.throw{cm="git push --set-upstream origin main", root="."}
   Cm.throw{cm="git tag v"..pkg.version, root="."}
-  pkg.sha1 = Git.treehash(pkg.dir)
+  Cm.throw{cm="git push origin v"..pkg.version, root="."}
+  pkg.sha1 = Git.hash(pkg.dir)
 
   --get specs and update them
   local specs = registry.table.packages[pkg.name]

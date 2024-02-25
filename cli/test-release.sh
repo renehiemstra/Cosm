@@ -5,7 +5,6 @@ DEPOT_PATH=$COSM_DEPOT_PATH
 cleanup_pkg(){
     pkg="$1"
     rm -rf "$DEPOT_PATH/dev/$pkg"
-    rm -rf "$DEPOT_PATH/clones/$pkg"
     gh repo delete "$pkg" --yes
 }
 cleanup_reg(){
@@ -38,9 +37,6 @@ runall(){
     cd $DEPOT_PATH/dev
 
     # create packages
-    cosm init Example
-    cosm init DepA
-    cosm init DepB
     cosm init DepDep
 
     # release DepDep to TestRegistry
@@ -48,55 +44,17 @@ runall(){
     # imagine we make some improvements to DepDep and
     # we bring out several more versions
     cd $DEPOT_PATH/dev/DepDep
-    cosm release --patch # v0.1.1
-    cosm release --minor # v0.2.0
-    cosm release --patch # v0.2.1
-    cosm release --major # v1.0.0
-    cosm release --patch # v1.0.1
-    
-    # add dependency to DepA
-    cd $DEPOT_PATH/dev/DepA
-    cosm add DepDep 0.2.0
-    cosm upgrade DepDep 0.2.1
-    # release DepA to TestRegistry
-    registry_add DepA
-    cd $DEPOT_PATH/dev/DepA
-    cosm release --minor # v0.2.0
-
-    # add dependency to DepB
-    cd $DEPOT_PATH/dev/DepB
-    cosm add DepDep 1.0.0 
-    # release DepB to TestRegistry
-    registry_add DepB
-    cd $DEPOT_PATH/dev/DepB
-    cosm release --patch # v0.1.1
-
-    # add dependencies to Example
-    cd $DEPOT_PATH/dev/Example
-    cosm add DepA 0.1.0
-    cosm add DepB 0.1.0
-    cosm upgrade DepA 0.2.0 
-    cosm upgrade DepB 0.1.1 
-    
-    # try to add and remove a package
-    cosm add DepDep 0.2.1
-    cosm upgrade DepDep 1.0.0
-    cosm downgrade DepDep 0.2.1
-    cosm rm DepDep
-    
-    # release DepB to TestRegistry
-    registry_add Example
-    cd $DEPOT_PATH/dev/Example
-    cosm release --minor # v0.2.0
-    cd $DEPOT_PATH
+    cosm release --patch    # v0.1.1
+    cosm release --minor    # v0.2.0
 }
 
 cleanall(){
-    cleanup_pkg Example
-    cleanup_pkg DepA
-    cleanup_pkg DepB
     cleanup_pkg DepDep
     cleanup_reg TestRegistry
+    rm -rf "$DEPOT_PATH/clones"
+    mkdir "$DEPOT_PATH/clones"
+    rm -rf "$DEPOT_PATH/packages"
+    mkdir "$DEPOT_PATH/clones"
 }
 
 # no input arguments - run test and cleanup

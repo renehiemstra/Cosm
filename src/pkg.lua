@@ -31,10 +31,32 @@ function Pkg.status()
     end
 end
 
+local function checkout(specs)
+    local root=Proj.terrahome.."/clones/"..specs.uuid
+    Cm.throw{cm="git pull", root=root} --get updates from remote - this is buggy
+    Cm.throw{cm="git checkout "..specs.sha1, root=root}
+end
+
+local function fetchfromremote(specs)
+    --clone package in ~.cosm/clones/<pkg-uuid>
+    Cm.throw{cm="git clone "..specs.url.." "..specs.uuid, root=Proj.terrahome.."/clones"}
+    checkout(specs)
+end
+
+--clone package in ~.cosm/clones/<pkg-uuid> and checkout the correct
+--version number
+function Pkg.fetch(specs)
+    if Cm.isdir(Proj.terrahome.."/clones/"..specs.uuid) then
+        print("directory exists, checking out "..specs.version)
+        checkout(specs)
+    else
+        fetchfromremote(specs)
+    end
+end
+
 --add a dependency to a project
 --signature Pkg.add{dep="...", version="xx.xx.xx"; root="."}
 function Pkg.add(args)
-    local pkg = {}
     --check key-value arguments
     if type(args)~="table" then
         error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
@@ -44,44 +66,56 @@ function Pkg.add(args)
         error("Provide table with `dep` (dependency) and `version` as a string.\n\n")
     end
     --set and check pkg root
-    pkg.root = "."
-    if args.root~=nil then
-        pkg.root = args.root
+    if args.root==nil then
+        args.root = "."
     end
-    if not Proj.ispkg(pkg.root) then
+    if not Proj.ispkg(args.root) then
         error("Current directory is not a valid package.")
     end
-    --initialize package properties
-    pkg.dep = {name=args.dep, version=args.version}
-    pkg.table = fetchprojecttable(pkg.root)
-    pkg.name = pkg.table.name
+    --initialize package and dependency
+    local dep = {name=args.dep, version=args.version}
+    local pkg = fetchprojecttable(args.root)
+    pkg.root = args.root
+
     --check that pkg and pkg.dep are not the same package
-    if pkg.name==pkg.dep.name then
-      error("Cannot add "..pkg.dep.name.."as a dependency to "..pkg.name..".\n\n")
+    if pkg.name==dep.name then
+      error("Cannot add "..dep.name.."as a dependency to "..pkg.name..".\n\n")
     end
     --find pkgdep in known registries
     local registry = {} --{name, path, table}
-    local found = Reg.loadregistry(registry, pkg.dep.name)
+    local found = Reg.loadregistry(registry, dep.name)
     --case where pkgdep is not found in any of the registries
     if not found then
-        error("Package "..pkg.dep.name.." is not a registered package.\n\n")
+        error("Package "..dep.name.." is not a registered package.\n\n")
     end
     --check if version is present in registry
-    pkg.dep.specs = registry.table.packages[pkg.dep.name]
-    local versionpath = registry.path.."/"..pkg.dep.specs.path.."/"..pkg.dep.version
+    dep.path = registry.table.packages[dep.name].path
+    local versionpath = registry.path.."/"..dep.path.."/"..dep.version
     if not Cm.isdir(versionpath) then
-        error("Package "..pkg.dep.name.." is registered in "..registry.name..", but version "..pkg.dep.version.." is lacking.\n\n")
+        error("Package "..dep.name.." is registered in "..registry.name..", but version "..dep.version.." is lacking.\n\n")
+    end
+    --make depdendency available (fetch from remote, copy source to packages)
+    dep.specs = dofile(versionpath.."/Specs.lua")
+    local dest = Proj.terrahome.."/packages/"..dep.name.."/"..dep.specs.sha1
+    if not Cm.isdir(dest) then
+        Pkg.fetch(dep.specs) --checkout version in .cosm/clones/<uuid> or checkout from remote repo
+        --leads to a detached HEAD
+        --copy source to .cosm/packages
+        local src = Proj.terrahome.."/clones/"..dep.specs.uuid
+        Cm.throw{cm="mkdir -p "..Proj.terrahome.."/packages/"..dep.name}
+        --copy all files and directories, except .git*
+        Cm.throw{cm="rsync -av --exclude=\".git*\" "..src.."/ "..dest}
+        Cm.throw{cm="git checkout -", root=src} --reset HEAD to previous
     end
     --add pkg.dep to the project dependencies
-    pkg.table.deps[pkg.dep.name] = pkg.dep.version
+    pkg.deps[dep.name] = dep.version
     --save pkg table
-    Proj.save(pkg.table, "Project.lua", pkg.root)
+    Proj.save(pkg, "Project.lua", pkg.root)
 end
 
 --remove a project dependency
 --signature Pkg.rm{dep="..."; root="."}
 function Pkg.rm(args)
-    local pkg = {}
     --check key-value arguments
     if type(args)~="table" then
         error("Provide table with `dep` (dependency) and optional `root` directory.\n\n")
@@ -91,25 +125,24 @@ function Pkg.rm(args)
         error("Provide table with `dep` (dependency) as a string.\n\n")
     end
     --set and check pkg root
-    pkg.root = "."
-    if args.root~=nil then
-        pkg.root = args.root
+    if args.root==nil then
+        args.root = "."
     end
-    if not Proj.ispkg(pkg.root) then
+    if not Proj.ispkg(args.root) then
         error("Current directory is not a valid package.")
     end
-    --initialize package properties
-    pkg.dep = { name=args.dep }
-    pkg.table = fetchprojecttable(pkg.root)
-    pkg.name = pkg.table.name
+    --initialize package and dependency
+    local dep = {name=args.dep}
+    local pkg = fetchprojecttable(args.root)
+    pkg.root = args.root
     --cannot remove a package that is not a dependency
-    if pkg.table.deps[pkg.dep.name]==nil then
+    if pkg.deps[dep.name]==nil then
         error("Provided package is not listed as a dependency.")
     end
     --removing pkg dependency
-    pkg.table.deps[pkg.dep.name] = nil
+    pkg.deps[dep.name] = nil
     --save pkg table
-    Proj.save(pkg.table,"Project.lua", pkg.root)
+    Proj.save(pkg,"Project.lua", pkg.root)
 end
 
 --upgrade a package to a higher version

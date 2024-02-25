@@ -65,20 +65,19 @@ function Proj.ispkg(root)
     print("not a project file")
     return false
   end
-  local pkgname = Cm.namedir(root)
-  local c2 = Cm.isfile(root.."/src/"..pkgname..".lua")
-  local c3 = Cm.isfile(root.."/src/"..pkgname..".t")
+  local pkg = dofile(root.."/Project.lua")
+  local c2 = Cm.isfile(root.."/src/"..pkg.name..".lua")
+  local c3 = Cm.isfile(root.."/src/"..pkg.name..".t")
   if not (c2 or c3) then
     print("not a lua or terra file")
     return false
   end
-  local table = dofile(root.."/Project.lua")
   return Proj.isprojtable(table)
 end
 
---create a universal unique identifier (uuid)
 local random = math.random
-math.randomseed(tonumber(tostring(os.time()):reverse():sub(1, 9)))
+math.randomseed()
+
 function Proj.uuid()
     local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
     return string.gsub(template, '[xy]', function (c) 
@@ -123,6 +122,7 @@ function Proj.save(projtable, projfile, root)
 end
 
 --clone a git-remote terra package. throw an error if input is invalid.
+--signature: {name=..., url=..., root=...}
 function Proj.clone(args)
   --check keyword arguments
   if args.root==nil or args.url==nil then
@@ -140,16 +140,12 @@ function Proj.clone(args)
   end
   --clone remote repo
   Cm.throw{cm="mkdir -p "..args.root}
-  Cm.throw{cm="git clone "..args.url, root=args.root}
+  Cm.throw{cm="git clone "..args.url.." "..args.name, root=args.root}
 
   --check that cloned repo satisfies basic package structure
-  print(args.url)
-  local pkgname = Git.namefromgiturl(args.url)
-  print(pkgname)
-  print(args.root.."/"..pkgname)
-  if not Proj.ispkg(args.root.."/"..pkgname) then
+  if not Proj.ispkg(args.root.."/"..args.name) then
       --remove terra cloned repo 
-      Cm.throw{cm="rm -rf "..pkgname, root=args.root}
+      Cm.throw{cm="rm -rf "..args.name, root=args.root}
       --throw error
       error("Cloned repository does not follow the specifications of a terra pkg.\n")
   end
@@ -160,7 +156,7 @@ local function genpkgdirs(pkgname, root)
   Cm.mkdir(root.."/"..pkgname) --package root folder
   Cm.mkdir(root.."/"..pkgname.."/src") --package source folder
   Cm.mkdir(root.."/"..pkgname.."/.pkg") --package managing folder
-  Git.ignore(root.."/"..pkgname, {".DS_Store", ".vscode"}) --generate .ignore file
+  Git.ignore(root.."/"..pkgname, {}) --generate .ignore file
 end
 
 --generate main source file
@@ -177,10 +173,11 @@ end
 
 --generate Package.lua
 local function genprojfile(pkgname, root)
+  local pkguuid = Proj.uuid()
   local file = io.open(root.."/"..pkgname.."/Project.lua", "w")
   file:write("Project = {\n")
   file:write("    name = \""..pkgname.."\",\n")
-  file:write("    uuid = \""..Proj.uuid().."\",\n")
+  file:write("    uuid = \""..pkguuid.."\",\n")
   file:write("    authors = {\""..Git.user.name.."<"..Git.user.email..">".."\"},\n")
   file:write("    version = \"".."0.1.0".."\",\n")
   file:write("    deps = {}\n")

@@ -104,13 +104,17 @@ function Git.pull(root)
         "git pull")
 end
 
+function Git.hash(root)
+    return Cm.capturestdout("cd "..root.."; git rev-parse HEAD")
+end
+
 function Git.treehash(root)
     return Cm.capturestdout("cd "..root.."; git rev-parse HEAD^{tree}")
 end
 
 --generate .ignore file
 function Git.ignore(root, list)
-    local file = io.open(root.."/.ignore", "w")
+    local file = io.open(root.."/.gitignore", "w")
     for k,v in pairs(list) do
         if not type(v)=="string" then
             error("Provide a string as input.")
