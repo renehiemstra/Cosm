@@ -71,6 +71,48 @@ init(){
     lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
 }
 
+add(){
+    case $2 in
+        --latest)
+            lua $COSM_DIR/cli/cmd-add-latest.lua $PWD "${1}" "${@:3}"
+            ;;
+        --version|-v)
+            lua $COSM_DIR/cli/cmd-add-version.lua $PWD "${1}" "${@:3}"
+            ;;
+        *)
+            printf "ArgumentError: the signature is 'cosm add <package name> [--latest, --version <version>]'. See 'cosm --help'. \n \n"
+            exit 1
+            ;;
+    esac
+}
+
+upgrade(){
+    case $2 in
+        --latest)
+            lua $COSM_DIR/cli/cmd-upgrade-latest.lua $PWD "${1}" "${@:3}"
+            ;;
+        --version|-v)
+            lua $COSM_DIR/cli/cmd-upgrade-version.lua $PWD "${1}" "${@:3}"
+            ;;
+        *)
+            printf "ArgumentError: the signature is 'cosm upgrade <package name> [--latest, --version <version>]'. See 'cosm --help'. \n \n"
+            exit 1
+            ;;
+    esac
+}
+
+downgrade(){
+    case $2 in
+        --version|-v)
+            lua $COSM_DIR/cli/cmd-downgrade.lua $PWD "${1}" "${@:3}"
+            ;;
+        *)
+            printf "ArgumentError: the signature is 'cosm downgrade <package name> --version <version>'. See 'cosm --help'. \n \n"
+            exit 1
+            ;;
+    esac
+}
+
 registry_delete(){
     if [ "$#" -eq 2 ]; then
         if [ "$1" == "--force" ]; then
@@ -136,14 +178,12 @@ release(){
             release=$1
             lua $COSM_DIR/cli/cmd-release.lua "${release:2}"
             ;;
-
         *)      # default
             printf "cosm: '$1' is not a 'cosm release' option. See 'cosm --help'.\n \n"
             exit 1
             ;;
     esac
 }
-
 
 # global variable pointing to the .bash_profile or .zprofile
 BASH_PROFILE="$(set_bash_profile)"
@@ -172,7 +212,7 @@ case "$1" in
     # Evaluate in root directory of a package. Add a dependency to a project with <name> and <version>
     add)
         checkname $2
-        lua $COSM_DIR/cli/cmd-add.lua $PWD "${@:2}"
+        add "${@:2}"
         ;;
     
     # Evaluate in root directory of a package. Remove a dependency from a project with <name>
@@ -184,12 +224,12 @@ case "$1" in
     # Evaluate in root directory of a package. Upgrade a project dependency with <name> to <version>
     upgrade)
         checkname $2
-        lua $COSM_DIR/cli/cmd-upgrade.lua $PWD "${@:2}"
+        upgrade "${@:2}"
         ;;
 
     downgrade)
         checkname $2
-        lua $COSM_DIR/cli/cmd-downgrade.lua $PWD "${@:2}"
+        downgrade "${@:2}"
         ;;
 
     registry)       # cosm registry

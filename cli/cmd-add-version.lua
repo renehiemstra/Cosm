@@ -1,8 +1,7 @@
 local Pkg = require("src.pkg")
-local Semver = require("src.semver")
 
 local function abort()
-    print("Invalid option arguments: use `cosm dependency add <name> <version>`")
+    print("ArgumentError: the signature is 'cosm add <package name> [--latest, --version <version>]'. See 'cosm --help'. \n \n")
     os.exit(1)
 end
 
@@ -13,8 +12,8 @@ end
 --extract command line arguments
 local nargs = #arg
 if nargs==3 then
-    local args = {root=arg[1], dep=arg[2], version=arg[3]}
-    Pkg.upgrade(args)
+    local args = {root = arg[1], dep = arg[2], version = arg[3]}
+    Pkg.add(args)
     printstats(args.dep, args.version)
 else
     abort()

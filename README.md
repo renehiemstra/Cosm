@@ -17,7 +17,7 @@ cosm status                             (implemented)
 ```
 *Gives an overview of a package when evaluated in the root of a package.*
 ```
-cosm registry status <registry name>                    (implemented)
+cosm registry status <registry name>    (implemented)
 ```
 *Gives an overview of the packages registered to the registry. Can be evaluated anywhere.*
 
@@ -43,32 +43,30 @@ cosm registry delete <registry name> [--force]       (implemented)
 
 ## add/remove/upgrade/downgrade project dependencies
 ```
-cosm add <name>              (not implemented)
-cosm add <name> <version>    (implemented)
+cosm add <name> --version <version>                 (implemented)
+cosm add <name> --latest                            (implemented)
 ```
 *Evaluate in a package root. Add a dependency to a project. Project <name> with version <version> will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries. If no version is specified it will add the newest available version that is compatible with other package dependencies.*
 
 ```
-cosm rm <name>               (implemented)
+cosm rm <name>                                      (implemented)
 ```
 *Evaluate in a package root. Removes a project dependency.*
 
 ```
-cosm upgrade <name>                          (not implemented)
-cosm upgrade <name> -v <version>             (not implemented)
-cosm upgrade <name> --version <version>      (not implemented)
+cosm upgrade <name> --version <version>             (implemented)
+cosm upgrade <name> --latest                        (implemented)
 ```
 *Evaluate in a package root. Upgrades a project dependency to a new specified or unspecied (newest possible) version.*
 
 ```
-cosm downgrade <name> -v <version>           (not implemented)
-cosm downgrade <name> --version <version>    (not implemented)
+cosm downgrade <name> <version>                     (implemented)
 ```
 *Evaluate in a package root. Downgrade a project dependency to a new specified or unspecied (newest possible) version.*
 
 ## register a project to a registry
 ```
-cosm registry add <giturl>     (implemented)
+cosm registry add <giturl>                  (implemented)
 ```
 *Evaluate in a registry root. Register a package to <registry> (in .cosm/registries). An error is thrown if the current version already exists in the registry. The remote repository of the registry is updated automatically.*
 

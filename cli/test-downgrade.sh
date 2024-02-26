@@ -49,8 +49,8 @@ runall(){
 
     # add dependencies to Example
     cd $DEPOT_PATH/dev/Example
-    cosm add DepDep 0.2.0
-    cosm downgrade DepDep 0.1.0
+    cosm add DepDep --version 0.2.0
+    cosm downgrade DepDep --version 0.1.0
 }
 
 cleanall(){

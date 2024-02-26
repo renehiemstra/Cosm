@@ -40,19 +40,27 @@ runall(){
 
     # create packages
     cosm init Example
-    cosm init DepDep
+    cosm init DepA
+    cosm init DepB
 
-    # release DepDep to TestRegistry
-    registry_add DepDep
+    # release DepA to TestRegistry
+    registry_add DepA
+    
+    # release DepA to TestRegistry
+    registry_add DepB
+    cd $DEPOT_PATH/dev/DepB
+    cosm release --major    # v1.0.0
 
     # add dependencies to Example
     cd $DEPOT_PATH/dev/Example
-    cosm add DepDep 0.1.0
+    cosm add DepA --version 0.1.0
+    cosm add DepB --latest
 }
 
 cleanall(){
     cleanup_pkg Example
-    cleanup_pkg DepDep
+    cleanup_pkg DepA
+    cleanup_pkg DepB
     cleanup_reg TestRegistry
     rm -rf "$DEPOT_PATH/clones"
     mkdir "$DEPOT_PATH/clones"

@@ -59,11 +59,11 @@ end
 function Pkg.add(args)
     --check key-value arguments
     if type(args)~="table" then
-        error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
-    elseif args.dep==nil or args.version==nil then
-        error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
-    elseif type(args.dep)~="string" or type(args.version)~="string" then
-        error("Provide table with `dep` (dependency) and `version` as a string.\n\n")
+        error("Provide table with `dep` (dependency) and optional `version` and `root` directory.\n\n")
+    elseif args.dep==nil then
+        error("Provide table with `dep` (dependency) and optional `version` and `root` directory.\n\n")
+    elseif type(args.dep)~="string" then
+        error("Provide table with `dep` (dependency) as a string.\n\n")
     end
     --set and check pkg root
     if args.root==nil then
@@ -72,21 +72,29 @@ function Pkg.add(args)
     if not Proj.ispkg(args.root) then
         error("Current directory is not a valid package.")
     end
-    --initialize package and dependency
-    local dep = {name=args.dep, version=args.version}
-    local pkg = fetchprojecttable(args.root)
-    pkg.root = args.root
-
-    --check that pkg and pkg.dep are not the same package
-    if pkg.name==dep.name then
-      error("Cannot add "..dep.name.."as a dependency to "..pkg.name..".\n\n")
-    end
-    --find pkgdep in known registries
+    --find pkg-dep and version in known registries
+    local dep = {name=args.dep}
     local registry = {} --{name, path, table}
     local found = Reg.loadregistry(registry, dep.name)
     --case where pkgdep is not found in any of the registries
     if not found then
-        error("Package "..dep.name.." is not a registered package.\n\n")
+        error("Package "..args.dep.." is not a registered package.\n\n")
+    end
+    dep.path = registry.table.packages[dep.name].path
+    if args.version==nil then
+        local depversions = dofile(registry.path.."/"..dep.path.."/Versions.lua")
+        dep.version = depversions[#depversions] -- pick the last version
+    elseif type(args.version) == "string" then
+        dep.version = args.version
+    else
+        error("Provide table with `version` as a string.\n\n")
+    end
+    --initialize package and dependency
+    local pkg = fetchprojecttable(args.root)
+    pkg.root = args.root
+    --check that pkg and pkg.dep are not the same package
+    if pkg.name==dep.name then
+      error("Cannot add "..dep.name.."as a dependency to "..pkg.name..".\n\n")
     end
     --check if version is present in registry
     dep.path = registry.table.packages[dep.name].path
@@ -150,11 +158,11 @@ end
 function Pkg.upgrade(args)
     --check key-value arguments
     if type(args)~="table" then
-        error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
-    elseif args.dep==nil or args.version==nil then
-        error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
-    elseif type(args.dep)~="string" or type(args.version)~="string" then
-        error("Provide table with `dep` (dependency) and `version` as a string.\n\n")
+        error("Provide table with `dep` (dependency) and optional `version` and `root` directory.\n\n")
+    elseif args.dep==nil then
+        error("Provide table with `dep` (dependency) and optional `version` and `root` directory.\n\n")
+    elseif type(args.dep)~="string" then
+        error("Provide table with `dep` (dependency) as a string.\n\n")
     end
     --set and check pkg root
     if args.root==nil then
@@ -163,27 +171,33 @@ function Pkg.upgrade(args)
     if not Proj.ispkg(args.root) then
         error("Current directory is not a valid package.")
     end
-    --initialize dependency
-    local dep = {name=args.dep, version=args.version}
+    --simply add the latest version
+    if args.version==nil then
+        Pkg.rm(args)
+        Pkg.add(args)
 
-    --initialize package properties
-    local pkg = fetchprojecttable(args.root)
-    pkg.root = args.root
-    --cannot remove a package that is not a dependency
-    local oldversion = pkg.deps[dep.name]
-    if oldversion==nil then
-        error("Provided package is not listed as a dependency.")
+    --add a specific version
+    else
+        local dep = {name=args.dep, version=args.version}
+        --initialize package properties
+        local pkg = fetchprojecttable(args.root)
+        pkg.root = args.root
+        --cannot remove a package that is not a dependency
+        local oldversion = pkg.deps[dep.name]
+        if oldversion==nil then
+            error("Provided package is not listed as a dependency.")
+        end
+        local v1 = Semver.parse(oldversion)
+        local v2 = Semver.parse(dep.version)
+        if v1==v2 then
+            error("Cannot upgrade: version already listed as a dependency.")
+        elseif v1>v2 then
+            error("Cannot upgrade: version is older than the one installed.")
+        end
+        --rm and add new version
+        Pkg.rm(args)
+        Pkg.add(args)
     end
-    local v1 = Semver.parse(oldversion)
-    local v2 = Semver.parse(dep.version)
-    if v1==v2 then
-        error("Cannot upgrade: version already listed as a dependency.")
-    elseif v1>v2 then
-        error("Cannot upgrade: version is older than the one installed.")
-    end
-    --rm and add new version
-    Pkg.rm(args)
-    Pkg.add(args)
 end
 
 --downgrade a package to a lower version

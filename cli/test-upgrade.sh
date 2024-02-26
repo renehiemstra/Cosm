@@ -46,11 +46,14 @@ runall(){
     cd $DEPOT_PATH/dev/DepDep
     registry_add DepDep
     cosm release --minor    # v0.2.0
+    cosm release --major    # v1.0.0
+    cosm release --patch    # v1.0.1
 
     # add dependencies to Example
     cd $DEPOT_PATH/dev/Example
-    cosm add DepDep 0.1.0
-    cosm upgrade DepDep 0.2.0
+    cosm add DepDep --version 0.1.0
+    cosm upgrade DepDep --version 0.2.0
+    cosm upgrade DepDep --latest
 }
 
 cleanall(){

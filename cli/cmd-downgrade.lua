@@ -2,7 +2,7 @@ local Pkg = require("src.pkg")
 local Semver = require("src.semver")
 
 local function abort()
-    print("Invalid option arguments: use `cosm downgrade <depname> <version>`")
+    print("ArgumentError: the signature is 'cosm downgrade <package name> --version <version>'. See 'cosm --help'. \n \n")
     os.exit(1)
 end
 
