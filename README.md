@@ -29,11 +29,17 @@ cosm init <name> --template <template>  (not implemented)
 ```p
 *Evaluate in parent folder of a new package. Adds a new package with name <name> according to a template (in .cosm/templates). Currently, only a lua template is implemented.*
 
-## instantiate a new registry
+## instantiate a new registry / delete a registry
 ```
 cosm registry init <name> <giturl>       (implemented)
 ```
 *Adds a new package registry with name <name> (in .cosm/registries) with remote located at <giturl>. The <giturl> should point to an empty remote git repository.*
+
+```
+cosm registry delete <registry name> [--force]       (implemented)
+```
+*Remove a registry from .cosm/registries.*
+
 
 ## add/remove/upgrade/downgrade project dependencies
 ```

@@ -14,7 +14,6 @@ end
 local nargs = #arg
 if nargs==3 then
     local args = {root=arg[1], dep=arg[2], version=arg[3]}
-    local v_new = Semver.parse(args.version)
     Pkg.downgrade(args)
     printstats(args.dep, args.version)
 else

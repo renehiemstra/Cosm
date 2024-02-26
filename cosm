@@ -71,6 +71,36 @@ init(){
     lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
 }
 
+registry_delete(){
+    if [ "$#" -eq 2 ]; then
+        if [ "$1" == "--force" ]; then
+            checkname $2
+            lua $COSM_DIR/cli/cmd-registry-delete.lua $2
+        elif [ "$2" == "--force" ]; then
+            checkname $1
+            lua $COSM_DIR/cli/cmd-registry-delete.lua $1
+        fi
+    elif [ "$#" -eq 1 ]; then
+        echo "Are you sure you want to delete $1? [y/n]"
+        read yes
+        case $yes in
+            y)
+                lua $COSM_DIR/cli/cmd-registry-delete.lua "${@}"
+                ;;
+            n)
+                # do nothing
+                ;;
+            *)
+                printf "Please verify with 'y' or 'n'.\n \n"
+                registry_delete $1
+                ;;
+        esac
+    else
+        printf "ArgumentError: the signature is 'cosm registry delete <registry name> [--force]'. See 'cosm --help'.\n \n"
+        exit 1
+    fi
+}
+
 registry(){
     case "$1" in
         status)
@@ -90,7 +120,7 @@ registry(){
             ;;
         delete)
             checkname $2
-            lua $COSM_DIR/cli/cmd-registry-delete.lua "${@:2}"
+            registry_delete "${@:2}"
             ;;
         *)      # default
             printf "cosm: '$1' is not a 'cosm registry' subcommand. See 'cosm --help'.\n \n"

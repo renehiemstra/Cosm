@@ -10,11 +10,12 @@ cleanup_pkg(){
 cleanup_reg(){
     reg="$1"
     gh repo delete "$reg" --yes
-    cosm registry delete "$reg"
+    cosm registry delete "$reg" --force
 }
 
 # register pkg to TestRegistry
 registry_add(){
+    cwd=$(pwd)
     pkg="$1"
     cd "$DEPOT_PATH/dev/$pkg"
     gh repo create "$pkg" --public
@@ -24,6 +25,7 @@ registry_add(){
     git push --set-upstream origin main
     cd "$DEPOT_PATH/registries/TestRegistry"
     cosm registry add git@github.com:renehiemstra/"$pkg".git
+    cd "$cwd"
 }
 # ToDo: add a check for validity of the git remote url
 

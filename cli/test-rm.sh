@@ -39,18 +39,23 @@ runall(){
     cd $DEPOT_PATH/dev
 
     # create packages
+    cosm init Example
     cosm init DepDep
 
     # release DepDep to TestRegistry
-    registry_add DepDep
-    # imagine we make some improvements to DepDep and
-    # we bring out several more versions
     cd $DEPOT_PATH/dev/DepDep
-    cosm release --patch    # v0.1.1
+    registry_add DepDep
     cosm release --minor    # v0.2.0
+
+    # add dependencies to Example
+    cd $DEPOT_PATH/dev/Example
+    cosm add DepDep 0.1.0
+    cosm rm DepDep
+    cosm add DepDep 0.2.0
 }
 
 cleanall(){
+    cleanup_pkg Example
     cleanup_pkg DepDep
     cleanup_reg TestRegistry
     rm -rf "$DEPOT_PATH/clones"
