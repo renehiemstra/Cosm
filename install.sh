@@ -51,7 +51,7 @@ create_depot(){
   # add files to handle refgistries
   echo "local List = {}" >> registries/List.lua
   echo "return List" >> registries/List.lua
-  # add to path
+  # add the depot path variable
   echo "export COSM_DEPOT_PATH=\"${COSM_DEPOT_PATH}\"" >> ${BASH_PROFILE}
   echo "The COSM_DEPOT_PATH variable is set to ${COSM_DEPOT_PATH} and is exported to your profile."
   # append COSM_DEPOT_PATH to the LUA_PATH and add to your profile
@@ -64,20 +64,19 @@ create_depot(){
 
 # download and install cosm cli
 install_cosm_cli(){
-  
+  # clone the cosm source and executable
+  cd "${COSM_DEPOT_PATH}"
+  git clone https://github.com/renehiemstra/Cosm.git .cosm
+  # add the cosm cli bash script to the path variable
+  echo "export PATH=\"${PATH}:${COSM_DEPOT_PATH}/.cosm/bin\"" >> ${BASH_PROFILE}
 }
 
 # install depot
 set_bash_profile
 set_depot_path
 create_depot
+install_cosm_cli
 
 # exit with success
-echo "The depot is set and ready for use. Open a new terminal window to continue."
+echo "The depot is set and ready for use. Open a new terminal window to continue, or 'source' your bash profile."
 exit 0
-
-
-
-
-
-
