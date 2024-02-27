@@ -66,7 +66,10 @@ create_depot(){
 install_cosm_cli(){
   # clone the cosm source and executable
   cd "${COSM_DEPOT_PATH}"
-  git clone https://github.com/renehiemstra/Cosm.git .cosm
+  git clone https://github.com/renehiemstra/Cosm.git .tmp
+  # copy non-git and non-test files only
+  rsync -av --exclude=".git*" --exclude="test*" --exlude=install.sh .tmp .cosm
+  rm -rf .tmp
   # add the cosm cli bash script to the path variable
   echo "export PATH=\"\${PATH}:${COSM_DEPOT_PATH}/.cosm/bin\"" >> ${BASH_PROFILE}
 }
