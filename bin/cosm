@@ -4,7 +4,7 @@
 VERSION="0.1.0"
 
 # load common and commands
-COSM_DIR="$(pwd)/../"
+COSM_DIR="${COSM_DEPOT_PATH}/.cosm"
 
 # check that cosm package or registry name consists of letters only
 checkname(){

@@ -1,3 +1,5 @@
+package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
+
 local Proj = require("src.project")
 
 local function abort()

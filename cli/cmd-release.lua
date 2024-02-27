@@ -1,3 +1,5 @@
+package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
+
 local Reg = require("src.registry")
 local Cm = require("src.command")
 
