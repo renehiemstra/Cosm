@@ -12,7 +12,10 @@ Some of these ideas have been drawn from my experiences with the Julia package m
 `Cosm` depends currently on [Lua]() and bash.
 
 ## Instalation
-Simply download and run the `install.sh` script.
+Simply download and run the `install.sh` script. Try the following to check that instalation was successful
+```
+cosm --version
+```
 
 ## get status of a package or registry
 ```
