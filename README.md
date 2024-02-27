@@ -60,7 +60,7 @@ cosm upgrade <name> --latest                        (implemented)
 *Evaluate in a package root. Upgrades a project dependency to a new specified or unspecied (newest possible) version.*
 
 ```
-cosm downgrade <name> <version>                     (implemented)
+cosm downgrade <name> --version <version>           (implemented)
 ```
 *Evaluate in a package root. Downgrade a project dependency to a new specified or unspecied (newest possible) version.*
 
