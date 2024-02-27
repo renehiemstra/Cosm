@@ -29,21 +29,26 @@ cosm init <name> --template <template>  (not implemented)
 ```
 *Evaluate in parent folder of a new package. Adds a new package with name <name> according to a template (in .cosm/templates). Currently, only a lua template is implemented.*
 
-## instantiate a new registry / delete a registry
+## instantiate a new registry / delete a registry / update a registry
 ```
-cosm registry init <name> <giturl>       (implemented)
+cosm registry init <registry name> <giturl>       (implemented)
 ```
 *Adds a new package registry with name <name> (in .cosm/registries) with remote located at <giturl>. The <giturl> should point to an empty remote git repository.*
 
 ```
-cosm registry delete <registry name> [--force]       (implemented)
+cosm registry delete <registry name> [--force]      (implemented)
 ```
 *Remove a registry from .cosm/registries.*
+
+```
+cosm registry update <registry name>                (not implemented)
+cosm registry update --all                          (not implemented)
+```
 
 
 ## add/remove/upgrade/downgrade project dependencies
 ```
-cosm add <name> --version <version>                 (implemented)
+cosm add <name> v<version>                          (implemented)
 cosm add <name> --latest                            (implemented)
 ```
 *Evaluate in a package root. Add a dependency to a project. Project <name> with version <version> will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries. If no version is specified it will add the newest available version that is compatible with other package dependencies.*
@@ -54,13 +59,13 @@ cosm rm <name>                                      (implemented)
 *Evaluate in a package root. Removes a project dependency.*
 
 ```
-cosm upgrade <name> --version <version>             (implemented)
+cosm upgrade <name> v<version>                      (implemented)
 cosm upgrade <name> --latest                        (implemented)
 ```
 *Evaluate in a package root. Upgrades a project dependency to a new specified or unspecied (newest possible) version.*
 
 ```
-cosm downgrade <name> --version <version>           (implemented)
+cosm downgrade <name> v<version>           (implemented)
 ```
 *Evaluate in a package root. Downgrade a project dependency to a new specified or unspecied (newest possible) version.*
 
