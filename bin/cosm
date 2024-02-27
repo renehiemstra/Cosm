@@ -6,18 +6,6 @@ VERSION="0.1.0"
 # load common and commands
 COSM_DIR="$(pwd)/../"
 
-# check use of zprofile or bash_profile
-set_bash_profile() {
-    if test -f "${HOME}/.bash_profile"; then
-        echo "${HOME}/.bash_profile" # linux, intel macos
-    elif test -f "${HOME}/.zprofile"; then
-        echo "${HOME}/.zprofile" # m-series macos
-    else
-        exit 1
-    fi
-    exit 0
-}
-
 # check that cosm package or registry name consists of letters only
 checkname(){
     if [[ "$1" =~ [^a-zA-Z] ]]; then
@@ -164,12 +152,6 @@ release(){
             ;;
     esac
 }
-
-# global variable pointing to the .bash_profile or .zprofile
-BASH_PROFILE="$(set_bash_profile)"
-
-# create directory structure
-create_depot "${HOME}/.cosm" "${BASH_PROFILE}"
 
 # cli - command options
 case "$1" in
