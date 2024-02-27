@@ -57,18 +57,18 @@ runall(){
     
     # add dependency to DepA
     cd $DEPOT_PATH/dev/DepA
-    cosm add DepDep 0.2.0
+    cosm add DepDep v0.2.0
     # release DepA to TestRegistry
     registry_add DepA
     cd $DEPOT_PATH/dev/DepA
-    cosm upgrade DepDep 0.2.1
+    cosm upgrade DepDep v0.2.1
     git add .
     git commit -m "<dep> changed dependencies"
     cosm release --minor # v0.2.0
 
     # add dependency to DepB
     cd $DEPOT_PATH/dev/DepB
-    cosm add DepDep 1.0.0 
+    cosm add DepDep v1.0.0 
     # release DepB to TestRegistry
     registry_add DepB
     cd $DEPOT_PATH/dev/DepB
@@ -76,15 +76,15 @@ runall(){
 
     # add dependencies to Example
     cd $DEPOT_PATH/dev/Example
-    cosm add DepA 0.1.0
-    cosm add DepB 0.1.0
-    cosm upgrade DepA 0.2.0 
-    cosm upgrade DepB 0.1.1 
+    cosm add DepA v0.1.0
+    cosm add DepB v0.1.0
+    cosm upgrade DepA v0.2.0 
+    cosm upgrade DepB v0.1.1 
     
     # try to add and remove a package
-    cosm add DepDep 0.2.1
-    cosm upgrade DepDep 1.0.0
-    cosm downgrade DepDep 0.2.1
+    cosm add DepDep v0.2.1
+    cosm upgrade DepDep --latest
+    cosm downgrade DepDep v0.2.1
     cosm rm DepDep
     
     # release DepB to TestRegistry
@@ -108,8 +108,8 @@ cleanall(){
 
 # no input arguments - run test and cleanup
 if [ "$#" == 0 ]; then
-    runall
     cleanall
+    runall
 fi
 
 # run test  or cleanup

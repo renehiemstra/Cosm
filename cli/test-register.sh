@@ -56,8 +56,8 @@ cleanall(){
 
 # no input arguments - run test and cleanup
 if [ "$#" == 0 ]; then
-    runall
     cleanall
+    runall
 fi
 
 # run test  or cleanup

@@ -56,7 +56,7 @@ runall(){
     
     # add dependency to DepA
     cd $DEPOT_PATH/dev/DepA
-    cosm add DepDep --version 0.2.0
+    cosm add DepDep v0.2.0
     # release DepA to TestRegistry
     registry_add DepA
     cosm release --patch    # v0.1.1
@@ -64,7 +64,7 @@ runall(){
 
     # add dependency to DepB
     cd $DEPOT_PATH/dev/DepB
-    cosm add DepDep --version 1.0.0
+    cosm add DepDep v1.0.0
     # release DepB to TestRegistry
     registry_add DepB
     cosm release --minor    # v0.2.0
@@ -72,11 +72,11 @@ runall(){
     cosm release --patch    # v1.0.1
 
     cd $DEPOT_PATH/dev/Example
-    cosm add DepA --version 0.2.0
+    cosm add DepA v0.2.0
     registry_add Example    # v0.1.0
     cosm add DepB --latest
-    cosm downgrade DepB --version 1.0.0
-    cosm upgrade DepB --version 1.0.1
+    cosm downgrade DepB v1.0.0
+    cosm upgrade DepB v1.0.1
     git add .
     git commit -m "<dep> added DepB"
     git push --set-upstream origin main
@@ -97,8 +97,8 @@ cleanall(){
 
 # no input arguments - run test and cleanup
 if [ "$#" == 0 ]; then
-    runall
     cleanall
+    runall
 fi
 
 # run test  or cleanup

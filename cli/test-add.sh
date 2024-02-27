@@ -53,7 +53,7 @@ runall(){
 
     # add dependencies to Example
     cd $DEPOT_PATH/dev/Example
-    cosm add DepA --version 0.1.0
+    cosm add DepA v0.1.0
     cosm add DepB --latest
 }
 
@@ -70,8 +70,8 @@ cleanall(){
 
 # no input arguments - run test and cleanup
 if [ "$#" == 0 ]; then
-    runall
     cleanall
+    runall
 fi
 
 # run test  or cleanup

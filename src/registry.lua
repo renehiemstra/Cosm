@@ -310,20 +310,12 @@ function Reg.register(args)
   Cm.throw{cm="cp -r "..src.." "..dest}
   Cm.throw{cm="rm -rf "..tmpdir}
   
-  print("mv files from "..src.." to "..dest)
-  print(Proj.uuid())
-  print(Proj.uuid())
-  print(Proj.uuid())
-  print(Proj.uuid())
-  
   --initialize package properties
   pkg.dir = dest
   pkg.url = args.url
   pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
   pkg.sha1 = Git.hash(pkg.dir)
   --push git tags
-  print("tagging "..pkg.name.." version "..pkg.version.." url "..pkg.url)
-  print("directory "..pkg.dir)
   Cm.throw{cm="git tag v"..pkg.version, root=pkg.dir }
   Cm.throw{cm="git push origin v"..pkg.version, root=pkg.dir }
   --update registry pkg list and save
