@@ -22,14 +22,18 @@ if nargs==2 then
         abort("Invalid arguments: root directory is not a valid registry.")
     end
     local regname = Cm.namedir(root)
-    --check url is a valid git url
-    local url = arg[2]
-    if not Git.validnonemptygitrepo(url) then
-        abort("Invalid arguments: git url does not point to a valid repository.")
+    --check pkg url is a valid git url or bare repo
+    local remote = {}
+    if Cm.isdir(arg[2]) then
+        remote.url = Cm.absolutepath(arg[2])
+    elseif Git.validnonemptygitrepo(arg[2]) then 
+        remote.url = arg[2]
+    else
+        abort("ArgumentError: argument "..arg[2].." is not a bare repo or valid git url.")
     end
     --register package
-    Reg.register{reg=regname, url=url}
-    printstats(regname, url)
+    Reg.register{reg=regname, url=remote.url}
+    printstats(regname, remote.url)
 else
-    abort("Invalid arguments: try signature: cosm registry add <giturl>.\n")
+    abort("Invalid arguments: try signature: cosm registry add <remote url/path>.\n")
 end

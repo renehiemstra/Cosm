@@ -10,6 +10,15 @@ function testNameFromGitUrl()
   lu.assertEquals(Git.remotegeturl("~/dev/Cosm"), "git@github.com:renehiemstra/Cosm.git")
 end
 
+function testIsBareRepo()
+  Cm.throw{cm="mkdir mybarerepo"}
+  Cm.throw{cm="mkdir someotherrepo"}
+  Cm.throw{cm="git init --bare", root="mybarerepo"}
+  lu.assertTrue(Git.isbarerepo("mybarerepo"))
+  lu.assertFalse(Git.isbarerepo("someotherrepo"))
+  Cm.throw{cm="rm -rf mybarerepo someotherrepo"}
+end
+
 function testValidGitRepo()
 
   lu.assertTrue(Git.isgiturl("git@github.com:terralang/terra.git"))
@@ -34,13 +43,13 @@ function testIgnoreFile()
   Cm.mkdir("tmp") --make a temporary directory
   Git.ignore("tmp", {".DS_Store", ".vscode", "*.paint"})
 
-  local first = Cm.capturestdout("head -1 tmp/.ignore") --capture first line of file
+  local first = Cm.capturestdout("head -1 tmp/.gitignore") --capture first line of file
   lu.assertEquals(first, ".DS_Store")
   
-  local second = Cm.capturestdout("cat tmp/.ignore | head -2 | tail -1") --capture second line of file
+  local second = Cm.capturestdout("cat tmp/.gitignore | head -2 | tail -1") --capture second line of file
   lu.assertEquals(second, ".vscode")
 
-  local third = Cm.capturestdout("cat tmp/.ignore | head -3 | tail -1") --capture second line of file
+  local third = Cm.capturestdout("cat tmp/.gitignore | head -3 | tail -1") --capture second line of file
   lu.assertEquals(third, "*.paint")
 
   Cm.rmdir("tmp") --cleanup

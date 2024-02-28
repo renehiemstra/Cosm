@@ -130,7 +130,7 @@ registry(){
                 printf "cosm: 'cosm registry init $registry $remote' is not a valid cosm command. See 'cosm --help'.\n \n"
             fi
             ;;
-        add)  # add a package to the registry
+        add)
             lua $COSM_DIR/cli/cmd-registry-add.lua $PWD "${@:2}"
             ;;
         rm)   # registry rm

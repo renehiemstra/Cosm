@@ -17,6 +17,15 @@ function Cm.isdir(dirname)
     return exitcode=="0"
 end
 
+--extract the absolute path give a relative (absolute) path
+function Cm.absolutepath(dir)
+    if Cm.isdir(dir) then
+        return Cm.capturestdout("realpath "..dir)
+    else
+        error("ArgumentError: not a valid path to a directory.")
+    end
+end
+
 --run command and return success or failure
 function Cm.success(args)
     if type(args.cm)~="string" then

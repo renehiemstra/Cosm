@@ -26,6 +26,17 @@ function Git.validgitrepo(url)
     return exitcode=="0" or exitcode=="2"
 end
 
+--check if the root directory is a bare repo
+function Git.isbarerepo(root)
+    if Cm.isdir(root) then
+        local isbare = Cm.capturestdout("cd "..root.."; git rev-parse --is-bare-repository")
+        if isbare=="true" then
+            return true
+        end
+    end
+    return false
+end
+
 --check if we are dealing with a possible git url
 function Git.isgiturl(string)
     if type(string)~="string" then

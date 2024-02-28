@@ -9,29 +9,35 @@ function testSuccess()
     os.execute("rm -rf tmp")
 end
 
+function testAbsolutePath()
+    local path1 = Cm.capturestdout("echo $PWD")
+    local path2 = Cm.absolutepath(".")
+    lu.assertEquals(path1, path2)
+end
+
 function testGetFileExtension()
     lu.assertEquals(Cm.getfileextension("hello.t"), "t")
     lu.assertEquals(Cm.getfileextension("Project.lua"), "lua")
 end
 
 function testIsFile()
-    lu.assertTrue(Cm.isfile("../.gitignore"))
-    lu.assertTrue(Cm.isfile("../README.md"))
-    lu.assertTrue(Cm.isfile("../src/command.lua"))
-    lu.assertFalse(Cm.isfile("../src/invalid.lua"))
+    lu.assertTrue(Cm.isfile(".gitignore"))
+    lu.assertTrue(Cm.isfile("README.md"))
+    lu.assertTrue(Cm.isfile("src/command.lua"))
+    lu.assertFalse(Cm.isfile("src/invalid.lua"))
 end
 
 function testIsDir()
     lu.assertTrue(Cm.isdir("."))
-    lu.assertTrue(Cm.isdir("../src"))
-    lu.assertTrue(Cm.isdir("../test"))
+    lu.assertTrue(Cm.isdir("src"))
+    lu.assertTrue(Cm.isdir("test"))
     lu.assertFalse(Cm.isdir("invalid"))
 end
 
 function testWorkDir()
     local home = Cm.capturestdout("echo $HOME")
-    lu.assertEquals(Cm.currentworkdir(), home.."/dev/Cosm/test")
-    lu.assertEquals(Cm.namedir("."), "test")
+    lu.assertEquals(Cm.currentworkdir(), home.."/cosm/.cosm")
+    lu.assertEquals(Cm.namedir("."), ".cosm")
 end
 
 function testMkDir()
@@ -40,4 +46,4 @@ function testMkDir()
     os.execute("rm -rf tmp")
 end
 
--- lu.LuaUnit.run()
+lu.LuaUnit.run()
