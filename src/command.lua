@@ -34,8 +34,8 @@ function Cm.success(args)
     --extract message and exitcode
     local i, j = string.find(s, "exitcode=")
     args.message = string.sub(s, 1, i-1)
-    args.exitcode = string.sub(s, j+1, -1)
-    return args.exitcode=="0"
+    args.exitcode = tonumber(string.sub(s, j+1, -1))
+    return args.exitcode==0
 end
 
 --run command and throw an error if command failed
@@ -46,7 +46,9 @@ function Cm.throw(args)
         elseif type(args.message)~="string" then
             error("Provide error `message` as a string.\n\n")
         end
-        error(args.message)
+        print("command failed with exitcode: "..args.exitcode)
+        print("message: "..args.message)
+        os.exit()
     end
 end
 
