@@ -188,18 +188,16 @@ function Reg.create(registry)
   registry.uuid = Proj.uuid()
   registry.description = "Cosm local package registry"
   registry.packages = {}
-  --generate registry folder
-  Cm.throw{cm="mkdir -p "..registry.path}
+  --clone repo
+  Cm.throw{cm="git clone "..registry.url.." "..registry.name, root=Reg.regdir}
   --generate .ignore file
   Git.ignore(registry.path, {})
   --generate Registry.lua file
   Reg.save(registry, "Registry.lua", registry.path)
-  --create git repo and push to origin
-  Cm.throw{cm="git init", root=registry.path}
+  --create git repo and push to origin\
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m \"Initialized new registry.\"", root=registry.path}
-  Cm.throw{cm="git remote add origin "..registry.url, root=registry.path}
-  Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
+  Cm.throw{cm="git push", root=registry.path}
   --add name of registry to the list of registries
   Reg.addtolist(registry.name)
 end
