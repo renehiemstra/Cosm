@@ -29,7 +29,7 @@ if nargs==2 then
     end
     --register package
     Reg.register{reg=regname, url=url}
-    printstats(regname, Git.namefromgiturl(url))
+    printstats(regname, url)
 else
     abort("Invalid arguments: try signature: cosm registry add <giturl>.\n")
 end
