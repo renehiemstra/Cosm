@@ -326,7 +326,7 @@ function Reg.register(args)
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
   Cm.throw{cm="git pull", root=registry.path}
-  Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
+  Cm.throw{cm="git push", root=registry.path}
 end
 
 --register a package to a registry
@@ -389,7 +389,7 @@ function Reg.release(pkgrelease)
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
   Cm.throw{cm="git pull", root=registry.path}
-  Cm.throw{cm="git push --set-upstream origin main", root=registry.path}
+  Cm.throw{cm="git push", root=registry.path}
 
   return pkg --return all updated pkg info
 end
