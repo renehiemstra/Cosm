@@ -27,15 +27,22 @@ function Cm.success(args)
     elseif not Cm.isdir(args.root) then
         error("Provide `root` directory of command.\n\n")
     end
-    local exitcode = Cm.capturestdout("cd "..args.root.."; "..args.cm.." &> /dev/null; echo $?")
-    return exitcode=="0"
+    --run command and output to an io device
+    local handle = io.popen("cd "..args.root.."; "..args.cm.."; echo \"exitcode=\"$?")
+    local s = handle:read("*a")
+    handle:close()
+    --extract message and exitcode
+    local i, j = string.find(s, "exitcode=")
+    args.message = string.sub(s, 1, i-1)
+    args.exitcode = string.sub(s, j+1, -1)
+    return args.exitcode=="0"
 end
 
 --run command and throw an error if command failed
 function Cm.throw(args)
     if not Cm.success(args) then
         if args.message==nil then
-            args.message = "Command: <"..args.cm.."> failed.\n\n"
+            args.message = "Command: <"..args.cm.."> failed with exitcode "..args.exitcode..".\n\n"
         elseif type(args.message)~="string" then
             error("Provide error `message` as a string.\n\n")
         end
