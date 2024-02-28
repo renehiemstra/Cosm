@@ -375,7 +375,7 @@ function Reg.release(pkgrelease)
   local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.version.."\""
   Cm.throw{cm="git add .", root="."}
   Cm.throw{cm="git commit -m "..commitmessage, root="."}
-  Cm.throw{cm="git push --set-upstream origin main", root="."}
+  Cm.throw{cm="git push", root="."}
   Cm.throw{cm="git tag v"..pkg.version, root="."}
   Cm.throw{cm="git push origin v"..pkg.version, root="."}
   pkg.sha1 = Git.hash(pkg.dir)
