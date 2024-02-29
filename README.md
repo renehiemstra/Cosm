@@ -48,8 +48,8 @@ cosm registry delete <registry name> [--force]      (implemented)
 *Remove a registry from .cosm/registries.*
 
 ```
-cosm registry update <registry name>                (not implemented)
-cosm registry update --all                          (not implemented)
+cosm registry update <registry name>                (implemented)
+cosm registry update --all                          (implemented)
 ```
 Update and synchronize registry with the remote.
 

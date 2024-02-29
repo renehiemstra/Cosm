@@ -137,6 +137,20 @@ registry_remove(){
     fi
 }
 
+registry_update(){
+    if [ "$#" -eq 1 ]; then
+        if [ "$1" == "--all" ]; then
+            lua $COSM_DIR/cli/cmd-registry-update.lua
+        else
+            checkname $1
+            lua $COSM_DIR/cli/cmd-registry-update.lua "${1}"
+        fi
+    else
+        printf "ArgumentError: the signature is 'cosm registry update [<registry name>, --all]'. See 'cosm --help'.\n \n"
+        exit 1
+    fi    
+}
+
 registry(){
     case "$1" in
         status)
@@ -159,6 +173,9 @@ registry(){
         delete)
             checkname $2
             registry_delete "${@:2}"
+            ;;
+        update)
+            registry_update "${@:2}"
             ;;
         *)      # default
             printf "cosm: '$1' is not a 'cosm registry' subcommand. See 'cosm --help'.\n \n"

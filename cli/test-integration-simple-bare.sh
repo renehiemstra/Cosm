@@ -95,6 +95,10 @@ runall(){
     git push --set-upstream origin main
     cosm release --minor    # v0.2.0
 
+    # update the registry (although)
+    cosm registry update TestRegistry
+    cosm registry update --all
+
     # remove packages
     cosm registry rm TestRegistry DepDep --force
     cosm registry rm TestRegistry DepA v0.1.0 --force

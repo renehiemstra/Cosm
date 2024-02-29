@@ -260,15 +260,20 @@ local function initpkgspecs(reg, pkg)
   io.close(file)
 end
 
-function Reg.update(registry)
-  if registry~="string" then
+function Reg.synchronize(registry)
+  if type(registry)~="string" then
     error("Provide registry name.\n")
   end
   if not Reg.islisted(registry) then
     error("Not a valid registry.")
   end
-  --update git repository
-  Cm.throw{cm="git pull", root=Reg.regdir.."/"..registry}
+  local root = Reg.regdir.."/"..registry
+  if Git.nodiff(root) and Git.nodiffstaged(root) then
+    --update git repository
+    Cm.throw{cm="git pull; git push", root=Reg.regdir.."/"..registry}
+  else
+    error("Add and commit your changes before updating the repository.")
+  end
 end
 
 -- signature: Reg.rmpackage(registry={name=...}, pkg={name=...})
