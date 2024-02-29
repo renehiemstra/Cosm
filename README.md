@@ -2,17 +2,18 @@
 `Cosm` and its associated command-line-interface `cosm`, is a package manager and integrated package registry. For now we support [Lua]() and embedded languages such as [Terra]() and soon [Regent](). However, the idea is to provide a general framework to support any language in the pursuit of package management.
 
 The design of `Cosm` is based on the following ideas
-* [Minimal version selection](https://research.swtch.com/vgo-mvs), leading to 100% reproducible builds without the need for a lockfile or pkg manifest that store the entire dependency tree. Instead, the dependency tree is evaluated just in time based on a simple criterion.
+* [Minimal version selection](https://research.swtch.com/vgo-mvs), leading to 100% reproducible builds without the need for a lockfile or pkg manifest that store the entire dependency tree.
+* Clear division of: (1) a language agnostic core functionality for package management, and (2) a language/build system specific top-layer that is extensible.
 * Integrated tools for package registries, allowing both publicly and privately hosted package registries, using the same interface.
 * A local depot directory (.cosm) that locally hosts registry and package data and interacts with remotes when required.
 * A command-line-interface that is easy and feels like `git`.
 
-Some of these ideas have been drawn from my experiences with the Julia package manager and registry, and the excellent set of [blog posts](https://research.swtch.com/vgo) from Ross Cox on package management in Go. 
+Some of these ideas have been drawn from my experiences with the [Julia package manager](https://pkgdocs.julialang.org/v1/) and the excellent set of [blog posts](https://research.swtch.com/vgo) from Ross Cox on package management in Go. Compared to the Julia Pkg manager, `cosm` naturally features reproducible builds without the need for a package manifest file. Instead, the dependency tree is evaluated just in time based on a simple criterion. The result is a relatively simple core design that is language agnostic. Specific Language or build system support can be added via simple plugins.
 
-`Cosm` depends currently on [Lua]() and bash.
+Currently, `Cosm` depends on [Lua]() and bash.
 
 ## Instalation
-Simply download and run the `install.sh` script. Try the following to check that instalation was successful
+Simply download and run the `install.sh` script. Try the following to check that calling `cosm` is successful
 ```
 cosm --version
 ```
@@ -50,7 +51,7 @@ cosm registry delete <registry name> [--force]      (implemented)
 cosm registry update <registry name>                (not implemented)
 cosm registry update --all                          (not implemented)
 ```
-
+Update and synchronize registry with the remote.
 
 ## add/remove/upgrade/downgrade project dependencies
 ```
@@ -71,16 +72,21 @@ cosm upgrade <name> --latest                        (implemented)
 *Evaluate in a package root. Upgrades a project dependency to a new specified or unspecied (newest possible) version.*
 
 ```
-cosm downgrade <name> v<version>           (implemented)
+cosm downgrade <name> v<version>                    (implemented)
 ```
 *Evaluate in a package root. Downgrade a project dependency to a new specified or unspecied (newest possible) version.*
 
-## register a project to a registry
+## register a project to a registry / remove from registry
 ```
-cosm registry add <giturl>                  (implemented)
+cosm registry add <registry name> <giturl>          (implemented)
 ```
-*Evaluate in a registry root. Register a package to <registry> (in .cosm/registries). An error is thrown if the current version already exists in the registry. The remote repository of the registry is updated automatically.*
+*Register a package to <registry> (in .cosm/registries). An error is thrown if the current version already exists in the registry. The remote repository of the registry is updated automatically.*
 
+```
+cosm registry rm <registry name> <package name> [--force]                (implemented)
+cosm registry rm <registry name> <package name> v<version> [--force]     (implemented)
+```
+*Remove a <version> of a package or a package entirely from the <registry> (in .cosm/registries). The remote repository of the registry is updated automatically.*
 
 ## register a new release of a project
 ```

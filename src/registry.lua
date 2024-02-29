@@ -296,6 +296,12 @@ function Reg.rmpkg(registry, pkg)
   registry.table.packages[pkg.name] = nil
   Cm.throw{cm="rm -rf "..pkg.path, root=registry.path}
   Reg.save(registry.table, "Registry.lua", registry.path)
+  --update registry remote git repository
+  local commitmessage = "\"<rm package> "..pkg.name.."\""
+  Cm.throw{cm="git add .", root=registry.path}
+  Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
+  Cm.throw{cm="git pull", root=registry.path}
+  Cm.throw{cm="git push", root=registry.path}
 end
 
 -- signature: Reg.rmpackage(registry={name=...}, pkg={name=...,version=...})
@@ -362,6 +368,12 @@ function Reg.rmpkgversion(registry, pkg)
     --remove version folders
     Cm.throw{cm="rm -rf "..pkg.path.."/"..pkg.version, root=registry.path}
   end
+  --update registry remote git repository
+  local commitmessage = "\"<rm package> "..pkg.name.." v"..pkg.version.."\""
+  Cm.throw{cm="git add .", root=registry.path}
+  Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
+  Cm.throw{cm="git pull", root=registry.path}
+  Cm.throw{cm="git push", root=registry.path}
 end
 
 --register a package to a registry
