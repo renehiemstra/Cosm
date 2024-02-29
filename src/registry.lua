@@ -271,6 +271,99 @@ function Reg.update(registry)
   Cm.throw{cm="git pull", root=Reg.regdir.."/"..registry}
 end
 
+-- signature: Reg.rmpackage(registry={name=...}, pkg={name=...})
+function Reg.rmpkg(registry, pkg)
+  --check keyword arguments
+  if registry.name==nil or type(registry.name)~="string" then
+    error("Provide `name` of registry as a string.\n")
+  end
+  if pkg.name==nil or type(pkg.name)~="string" then
+    error("Provide package `pkg` name as a string.\n")
+  end
+  registry.path = Reg.regdir.."/"..registry.name
+  --check if registry name points to a valid registry
+  if not (Reg.islisted(registry.name) and Reg.isreg(registry.path)) then
+    error("Registry is not listed or is invalid.\n")
+  end
+  -- get registry table with registered packages
+  registry.table = dofile(registry.path.."/Registry.lua")
+  --check of package is registered
+  if registry.table.packages[pkg.name]==nil then
+    error("Package "..pkg.name.." is not registerd to "..registry.name..".")
+  end
+  --update registry pkg list and save
+  pkg.path = registry.table.packages[pkg.name].path
+  registry.table.packages[pkg.name] = nil
+  Cm.throw{cm="rm -rf "..pkg.path, root=registry.path}
+  Reg.save(registry.table, "Registry.lua", registry.path)
+end
+
+-- signature: Reg.rmpackage(registry={name=...}, pkg={name=...,version=...})
+function Reg.rmpkgversion(registry, pkg)
+  --check keyword arguments
+  if registry.name==nil or type(registry.name)~="string" then
+    error("Provide `name` of registry as a string.\n")
+  end
+  if pkg.name==nil or type(pkg.name)~="string" then
+    error("Provide package `pkg` name as a string.\n")
+  end
+  if pkg.version==nil or type(pkg.version)~="string" then
+    error("Provide package `pkg` name as a string.\n")
+  end
+  registry.path = Reg.regdir.."/"..registry.name
+  --check if registry name points to a valid registry
+  if not (Reg.islisted(registry.name) and Reg.isreg(registry.path)) then
+    error("Registry is not listed or is invalid.\n")
+  end
+  -- get registry table with registered packages
+  registry.table = dofile(registry.path.."/Registry.lua")
+  --check of package is registered
+  if registry.table.packages[pkg.name]==nil then
+    error("Package "..pkg.name.." is not registerd to "..registry.name..".")
+  end
+  --check if version is present in registry
+  pkg.path = registry.table.packages[pkg.name].path
+  local versionpath = registry.path.."/"..pkg.path.."/"..pkg.version
+  if not Cm.isdir(versionpath) then
+      error("Package "..pkg.name.." is registered in "..registry.name..", but version "..pkg.version.." is lacking.\n\n")
+  end
+  pkg.versions = dofile(registry.path.."/"..pkg.path.."/Versions.lua")
+  local count=0
+  local index=-1
+  for i,v in pairs(pkg.versions) do
+    if v==pkg.version then
+      index=i
+    end
+    count=count+1
+  end
+  --something's messed up with Versions.lua
+  if index==-1 then
+    error("Versions.lua is inconsistent with available versions in "..pkg.path)
+  end
+  --if there is only one registered version then remove package entirely
+  if count<2 then
+    registry.table.packages[pkg.name] = nil
+    Cm.throw{cm="rm -rf "..pkg.path, root=registry.path}
+    Reg.save(registry.table, "Registry.lua", registry.path)
+  --else remove only specific version
+  else
+    --update versions table
+    table.remove(pkg.versions, index)
+    --remove version from Versions.lua
+    local file = io.open(registry.path.."/"..pkg.path.."/Versions.lua", "w")
+    io.output(file)
+    io.write("Versions = {\n")
+    for i,v in pairs(pkg.versions) do
+      io.write(string.format("    %q,\n", v))
+    end
+    io.write("}\n")
+    io.write("return Versions")
+    io.close(file)
+    --remove version folders
+    Cm.throw{cm="rm -rf "..pkg.path.."/"..pkg.version, root=registry.path}
+  end
+end
+
 --register a package to a registry
 --signature Reg.register{reg=..., url=...}
 function Reg.register(args)

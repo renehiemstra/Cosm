@@ -117,25 +117,18 @@ registry(){
             checkname $2
             lua $COSM_DIR/cli/cmd-registry-status.lua "${@:2}"
             ;;
-        init) # initialize a registry
-            if [ "$#" -eq 3 ]; then
-                registry="${2}"
-                remote="${3}"
-                checkname $registry
-                if [ -d $remote ]; then
-                    remote="$(realpath "${remote}")"
-                fi
-                lua $COSM_DIR/cli/cmd-registry-init.lua "${registry}" "${remote}"
-            else
-                printf "cosm: 'cosm registry init $registry $remote' is not a valid cosm command. See 'cosm --help'.\n \n"
-            fi
+        init)
+            checkname $2
+            lua $COSM_DIR/cli/cmd-registry-init.lua "${@:2}"
             ;;
         add)
+            checkname $2
             lua $COSM_DIR/cli/cmd-registry-add.lua "${@:2}"
             ;;
-        rm)   # registry rm
+        rm)
             checkname $2
-            lua $COSM_DIR/cli/cmd-registry-rm.lua $PWD "${@:2}"
+            checkname $3
+            lua $COSM_DIR/cli/cmd-registry-rm.lua "${@:2}"
             ;;
         delete)
             checkname $2

@@ -94,6 +94,12 @@ runall(){
     git commit -m "<dep> added DepB"
     git push --set-upstream origin main
     cosm release --minor    # v0.2.0
+
+    # remove packages
+    cosm registry rm TestRegistry DepDep
+    cosm registry rm TestRegistry DepA v0.1.0
+    cosm registry rm TestRegistry DepA v0.1.1
+    cosm registry rm TestRegistry DepA v0.2.0
 }
 
 cleanall(){
