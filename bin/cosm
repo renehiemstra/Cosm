@@ -111,6 +111,32 @@ registry_delete(){
     fi
 }
 
+registry_remove(){
+    if [ "${@: -1}" == "--force" ]; then
+        lua $COSM_DIR/cli/cmd-registry-rm.lua "${@:1:${#}-1}"
+    else
+        if [ "$#" -eq 2 ] || [ "$#" -eq 3 ]; then
+            echo "Are you sure you want to delete package ${2} ${3} from ${1}? [y/n]"
+            read yes
+            case $yes in
+                y)
+                    lua $COSM_DIR/cli/cmd-registry-rm.lua "${@:0}"
+                    ;;
+                n)
+                    # do nothing
+                    ;;
+                *)
+                    printf "Please verify with 'y' or 'n'.\n \n"
+                    registry_remove "${@:0}"
+                    ;;
+            esac
+        else
+            printf "ArgumentError: the signature is 'cosm registry rm <registry name> <package name> [v<version>, --force]'. See 'cosm --help'.\n \n"
+            exit 1
+        fi
+    fi
+}
+
 registry(){
     case "$1" in
         status)
@@ -128,7 +154,7 @@ registry(){
         rm)
             checkname $2
             checkname $3
-            lua $COSM_DIR/cli/cmd-registry-rm.lua "${@:2}"
+            registry_remove "${@:2}"
             ;;
         delete)
             checkname $2
