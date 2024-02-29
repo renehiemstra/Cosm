@@ -96,7 +96,6 @@ cosm release --major     (implemented)
 ```
 *Evaluate in a package root. Release a package to the registry to which the package has previously been registered (in .cosm/registries) and bump the existing `patch`, `minor`, or `major` version. An error is thrown if the current version already exists in the registry. The package and registry remotes are updated automatically.*
 ```
-cosm release -v <version>            (not implemented)
-cosm release --version <version>     (not implemented)
+cosm release v<version>     (implemented)
 ```
-*Evaluate in a package root. Release a package to the registry to which the package has previously been registered (in .cosm/registries) and change the version number to the one provided. The version name needs to adhere to the semantic versioning listed below. An error is thrown if the current version already exists in the registry. The remote is updated automatically.*
+*Evaluate in a package root. Release a package to the registry to which the package has previously been registered (in .cosm/registries) and change the version number to the one provided. The version name needs to adhere to semantic versioning and needs to be greater than the previous version. An error is thrown if the current version already exists in the registry. The remote is updated automatically.*

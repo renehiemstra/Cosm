@@ -445,12 +445,12 @@ end
 -- end
 
 --release a new pkg version to the registry
---signature: Reg.release{release=...("patch", "minor","major")}
+--signature: Reg.release{release=...("patch", "minor","major", or a version number)}
 function Reg.release(pkgrelease)
-  --check keyword argument `release`
-  if not ((pkgrelease=="patch") or (pkgrelease=="minor") or (pkgrelease=="major")) then
-    error("Provide `release` equal to \"patch\", \"minor\", or \"major\".\n\n")
-  end
+  -- --check keyword argument `release`
+  -- if not ((pkgrelease=="patch") or (pkgrelease=="minor") or (pkgrelease=="major")) then
+  --   error("Provide `release` equal to \"patch\", \"minor\", or \"major\".\n\n")
+  -- end
   --check if current directory is a valid package
   if not Proj.ispkg(".") then
     error("Current directory does not follow the specifications of a cosm pkg.\n")
@@ -468,13 +468,19 @@ function Reg.release(pkgrelease)
     error("Package "..pkg.name.." is not registered in any of the listed registries.")
   end
   --increase package version
-  local version = Semver.parse(pkg.version)
+  local oldversion = Semver.parse(pkg.version)
+  local version
   if pkgrelease=="patch" then
-    version = version:nextPatch()
+    version = oldversion:nextPatch()
   elseif pkgrelease=="minor" then
-    version = version:nextMinor()
+    version = oldversion:nextMinor()
   elseif pkgrelease=="major" then
-    version = version:nextMajor()
+    version = oldversion:nextMajor()
+  else
+    version = Semver.parse(pkgrelease)
+    if version <= oldversion then
+      error("New version is older than old version.")
+    end
   end
   pkg.version = tostring(version)
   pkg.url = Git.remotegeturl(".")

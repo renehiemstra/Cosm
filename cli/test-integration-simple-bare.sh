@@ -66,6 +66,7 @@ runall(){
     cosm release --minor    # v0.2.0
     cosm release --major    # v1.0.0
     cosm release --patch    # v1.0.1
+    cosm release v2.1.1
     
     # add dependency to DepA
     cd $DEPOT_PATH/dev/DepA
