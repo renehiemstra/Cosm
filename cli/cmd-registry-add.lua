@@ -16,24 +16,24 @@ end
 --extract command line arguments
 local nargs = #arg
 if nargs==2 then
-    --check root is a registry
-    local root = arg[1]
-    if not Reg.isreg(root) then
-        abort("Invalid arguments: root directory is not a valid registry.")
-    end
-    local regname = Cm.namedir(root)
-    --check pkg url is a valid git url or bare repo
+    local registry = {}
     local remote = {}
+    --check root is a registry
+    registry.name = arg[1]
+    if not Reg.islisted(registry.name) then
+        abort("Invalid arguments: not a valid registry.")
+    end
+    --check pkg url is a valid git url or bare repo
     if Cm.isdir(arg[2]) then
         remote.url = Cm.absolutepath(arg[2])
-    elseif Git.validnonemptygitrepo(arg[2]) then 
+    elseif Git.validnonemptygitrepo(arg[2]) then
         remote.url = arg[2]
     else
         abort("ArgumentError: argument "..arg[2].." is not a bare repo or valid git url.")
     end
     --register package
-    Reg.register{reg=regname, url=remote.url}
-    printstats(regname, remote.url)
+    Reg.register{reg=registry.name, url=remote.url}
+    printstats(registry.name, remote.url)
 else
     abort("Invalid arguments: try signature: cosm registry add <remote url/path>.\n")
 end

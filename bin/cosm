@@ -131,7 +131,7 @@ registry(){
             fi
             ;;
         add)
-            lua $COSM_DIR/cli/cmd-registry-add.lua $PWD "${@:2}"
+            lua $COSM_DIR/cli/cmd-registry-add.lua "${@:2}"
             ;;
         rm)   # registry rm
             checkname $2

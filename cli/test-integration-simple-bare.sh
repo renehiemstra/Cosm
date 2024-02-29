@@ -16,7 +16,8 @@ cleanup_reg(){
 # register pkg to TestRegistry
 registry_add(){
     cwd=$(pwd)
-    pkg="$1"
+    registry="$1"
+    pkg="$2"
     cd "$DEPOT_PATH/dev/$pkg"
     localhub_add $pkg
     git remote add origin $DEPOT_PATH/localhub/$pkg
@@ -24,7 +25,7 @@ registry_add(){
     git commit -m "<dep> added dependencies"
     git push --set-upstream origin main
     cd "$DEPOT_PATH/registries/TestRegistry"
-    cosm registry add $DEPOT_PATH/localhub/$pkg
+    cosm registry add $registry $DEPOT_PATH/localhub/$pkg
     cd "$cwd"
 }
 # ToDo: add a check for validity of the git remote url
@@ -57,7 +58,7 @@ runall(){
     cosm init Example
 
     # release DepDep to TestRegistry
-    registry_add DepDep
+    registry_add TestRegistry DepDep
     # imagine we make some improvements to DepDep and
     # we bring out several more versions
     cd $DEPOT_PATH/dev/DepDep
@@ -70,7 +71,7 @@ runall(){
     cd $DEPOT_PATH/dev/DepA
     cosm add DepDep v0.2.0
     # release DepA to TestRegistry
-    registry_add DepA
+    registry_add TestRegistry DepA
     cosm release --patch    # v0.1.1
     cosm release --minor    # v0.2.0
 
@@ -78,14 +79,14 @@ runall(){
     cd $DEPOT_PATH/dev/DepB
     cosm add DepDep v1.0.0
     # release DepB to TestRegistry
-    registry_add DepB
+    registry_add TestRegistry DepB
     cosm release --minor    # v0.2.0
     cosm release --major    # v1.0.0
     cosm release --patch    # v1.0.1
 
     cd $DEPOT_PATH/dev/Example
     cosm add DepA v0.2.0
-    registry_add Example    # v0.1.0
+    registry_add TestRegistry Example    # v0.1.0
     cosm add DepB --latest
     cosm downgrade DepB v1.0.0
     cosm upgrade DepB v1.0.1
