@@ -76,6 +76,11 @@ cosm downgrade <name> v<version>                    (implemented)
 ```
 *Evaluate in a package root. Downgrade a project dependency to a new specified or unspecied (newest possible) version.*
 
+```
+cosm develop <package name>                         (not implemented)
+```
+*Evaluate in parent folder of a package. Add a dependency to a project, but in development mode, which means it checks out a 'git clone' of the latest version of <package name> in 'cosm/dev' that you can freely develop in. The changes are imediately available in your parent project.*
+
 ## register a project to a registry / remove from registry
 ```
 cosm registry add <registry name> <giturl>          (implemented)
