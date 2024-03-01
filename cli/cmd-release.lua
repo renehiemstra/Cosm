@@ -14,6 +14,9 @@ end
 
 --extract command line arguments
 local nargs = #arg
+for k,v in pairs(arg) do
+    print(k, v)
+end
 if nargs==1 then
     local option=arg[1]
     local release

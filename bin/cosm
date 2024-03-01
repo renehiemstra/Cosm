@@ -120,14 +120,14 @@ registry_remove(){
             read yes
             case $yes in
                 y)
-                    lua $COSM_DIR/cli/cmd-registry-rm.lua "${@:0}"
+                    lua $COSM_DIR/cli/cmd-registry-rm.lua "${@}"
                     ;;
                 n)
                     # do nothing
                     ;;
                 *)
                     printf "Please verify with 'y' or 'n'.\n \n"
-                    registry_remove "${@:0}"
+                    registry_remove "${@}"
                     ;;
             esac
         else
@@ -186,7 +186,7 @@ registry(){
 
 # cosm register
 release(){
-    lua $COSM_DIR/cli/cmd-release.lua "${@:0}"
+    lua $COSM_DIR/cli/cmd-release.lua "${@}"
 }
 
 # cli - command options
