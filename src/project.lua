@@ -105,7 +105,7 @@ function Proj.save(projtable, projfile, root)
   io.write(string.format("  uuid = %q,\n",projtable.uuid))
   -- write author list
   io.write("  authors = {")
-  for k,v in pairs(projtable.authors) do
+  for _,v in ipairs(projtable.authors) do
       io.write(string.format("%q, ", v))
   end
   io.write("}, \n")

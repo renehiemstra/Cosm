@@ -229,11 +229,12 @@ local function initpkgspecs(reg, pkg)
     Cm.throw{cm="touch Versions.lua", root=root}
   end
   table.insert(versions, pkg.version)
+  table.sort(versions)
   --write Versions.lua
   local file = io.open(root.."/Versions.lua", "w")
   io.output(file)
   io.write("Versions = {\n")
-  for i,v in pairs(versions) do
+  for _,v in ipairs(versions) do
     io.write(string.format("    %q,\n", v))
   end
   io.write("}\n")

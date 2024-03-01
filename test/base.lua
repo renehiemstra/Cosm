@@ -21,5 +21,11 @@ function testGetSortedKeys()
     lu.assertEquals(sortedkeys[6], "f")
 end
 
+function testIsarray()
+    local table = {1, 2, 3, 4, 5, 6}
+    lu.assertFalse(Base.is_array(table))
+    Base.mark_as_array(table)
+    lu.assertTrue(Base.is_array(table))
+end
 
---lu.LuaUnit.run()
+lu.LuaUnit.run()

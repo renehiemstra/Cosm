@@ -4,6 +4,30 @@ function Base.esc(string)
   return "\""..string.."\""
 end
 
+function Base.mark_as_array(t)
+  setmetatable(t, {__isarray = true})
+end
+
+function Base.mark_as_table(t)
+  setmetatable(t, {__isarray = false})
+end
+
+local function getcustommetatable(t)
+  local mt = getmetatable(t)
+  if mt==nil then
+    Base.mark_as_table(t)
+    return getmetatable(t)
+  else
+    return mt
+  end
+end
+
+-- use this when serializing
+function Base.is_array(t)
+  local mt = getcustommetatable(t)
+  return mt.__isarray==true
+end
+
 function Base.haskeyoftype(set, key, mytype)
   if type(set[key])==mytype then
 	return true
@@ -28,10 +52,18 @@ function Base.serialize(o, n)
       io.write(string.format("%q", o), ",\n")
   elseif type(o) == "table" then
       io.write("{\n")
-      for k,v in pairs(o) do
-          io.write(string.rep("    ", n), k, " = ")
+      if Base.is_array(o) then --if marked as an array
+        for _,v in ipairs(o) do
+          io.write(string.rep("    ", n))
           Base.serialize(v, n+1)
           --io.write(",\n")
+        end
+      else  --regular table or hashtable
+        local sortedkeys = Base.getsortedkeys(o)
+        for _,key in ipairs(sortedkeys) do
+          io.write(string.rep("    ", n), key, " = ")
+          Base.serialize(o[key], n+1)
+        end
       end
       io.write(string.rep("    ", n-1).."},\n")
   else
