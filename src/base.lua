@@ -12,6 +12,15 @@ function Base.haskeyoftype(set, key, mytype)
   end
 end
 
+function Base.getsortedkeys(set)
+  local keys = {}
+  for key,value in pairs(set) do
+    table.insert(keys, key)
+  end
+  table.sort(keys)
+  return keys
+end
+
 function Base.serialize(o, n)
   if type(o) == "number" then
       io.write(o, ",\n")

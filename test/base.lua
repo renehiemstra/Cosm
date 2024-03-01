@@ -10,4 +10,16 @@ function testHaskey()
     lu.assertFalse(Base.haskeyoftype(table, "b", "number"))
 end
 
--- lu.LuaUnit.run()
+function testGetSortedKeys()
+    local table = {e = 5, c = 3, b = 2, d = 4, a = 1, f = 6}
+    local sortedkeys = Base.getsortedkeys(table)
+    lu.assertEquals(sortedkeys[1], "a")
+    lu.assertEquals(sortedkeys[2], "b")
+    lu.assertEquals(sortedkeys[3], "c")
+    lu.assertEquals(sortedkeys[4], "d")
+    lu.assertEquals(sortedkeys[5], "e")
+    lu.assertEquals(sortedkeys[6], "f")
+end
+
+
+--lu.LuaUnit.run()

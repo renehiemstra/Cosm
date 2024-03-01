@@ -71,17 +71,18 @@ function Reg.loadregistry(registry, pkgname)
 end
 
 --save all registries to List.lua
-function Reg.saveregistries(table)
-  if not type(table) == "table" then
+function Reg.saveregistries(registries)
+  if not type(registries) == "table" then
     error("Not a lua table.\n\n")
   end
+  table.sort(registries)
   if not Cm.isfile(Reg.regdir.."/List.lua") then
     Cm.throw{cm="touch List.lua", root=Reg.regdir}
   end
   local file = io.open(Reg.regdir.."/List.lua", "w")
   io.output(file)
   io.write("local List = {\n")
-  for k,v in pairs(table) do
+  for k,v in pairs(registries) do
     io.write(string.format("    %q,\n", v))
   end
   io.write("}\n")
