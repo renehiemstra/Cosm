@@ -57,10 +57,10 @@ runall(){
     cd $DEPOT_PATH/dev
 
     # create packages
-    cosm init DepA
-    cosm init DepB
-    cosm init DepDep
-    cosm init Example
+    cosm init DepA ../lang/lua/PkgTemplate
+    cosm init DepB ../lang/lua/PkgTemplate
+    cosm init DepDep ../lang/lua/PkgTemplate
+    cosm init Example ../lang/lua/PkgTemplate
 
     # release DepDep to TestRegistry
     # imagine we make some improvements to DepDep and

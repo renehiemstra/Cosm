@@ -45,7 +45,7 @@ create_depot(){
   mkdir "${COSM_DEPOT_PATH}"
   cd "${COSM_DEPOT_PATH}"
   # create folder structure
-  mkdir clones packages dev compiled registries templates
+  mkdir clones packages dev compiled registries lang
   # add files to handle refgistries
   echo "local List = {}" >> registries/List.lua
   echo "return List" >> registries/List.lua

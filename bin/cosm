@@ -19,8 +19,13 @@ status(){
 }
 
 init(){
-    checkname $1
-    lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
+    if [ "$#" -eq 2 ]; then
+        checkname $1
+        lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
+    else
+        printf "ArgumentError: the signature is 'cosm init <package name> <template path>'. See 'cosm --help'. \n \n"
+        exit 1
+    fi
 }
 
 add(){

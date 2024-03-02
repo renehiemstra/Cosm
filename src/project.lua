@@ -1,11 +1,12 @@
 local Base = require("src.base")
 local Cm = require("src.command")
 local Git = require("src.git")
+local Lang = require("src.langext")
 
 local Proj = {}
 
 Proj.homedir = Cm.capturestdout("echo ~$user")
-Proj.terrahome = Cm.capturestdout("echo $COSM_DEPOT_PATH")
+Proj.terrahome = os.getenv("COSM_DEPOT_PATH")
 
 --load a terra package
 function Proj.require(depname)
@@ -151,26 +152,6 @@ function Proj.clone(args)
   end
 end
 
---generate package folders
-local function genpkgdirs(pkgname, root)
-  Cm.mkdir(root.."/"..pkgname) --package root folder
-  Cm.mkdir(root.."/"..pkgname.."/src") --package source folder
-  Cm.mkdir(root.."/"..pkgname.."/.pkg") --package managing folder
-  Git.ignore(root.."/"..pkgname, {}) --generate .ignore file
-end
-
---generate main source file
-local function gensrcfile(pkgname, root)
-  local file = io.open(root.."/"..pkgname.."/src/"..pkgname..".lua", "w")                                       
-  file:write("local Cosm = require(\"Cosm\")\n")
-  file:write("local S = {}\n\n")
-  file:write("function S.hellolua()\n")
-  file:write("  print(\"hello lua!\")\n")
-  file:write("end\n\n")
-  file:write("return S")
-  file:close()
-end
-
 --generate Package.lua
 local function genprojfile(pkgname, root)
   local pkguuid = Proj.uuid()
@@ -187,12 +168,12 @@ local function genprojfile(pkgname, root)
 end
 
 --create a terra pkg template
-function Proj.create(pkgname, root)
-  genpkgdirs(pkgname, root)
-  gensrcfile(pkgname, root)
+function Proj.create(template, pkgname, root)
+  --create a project from a template
+  Lang.project_from_template(template, pkgname, root)
+  --crete Project.lua file
   genprojfile(pkgname, root)
-
-  --update registry remote git repository
+  --initialize a git version control and commit initial project
   local commitmessage = "\"<new package> "..pkgname.."\""
   Cm.throw{cm="git init", root=root.."/"..pkgname}
   Cm.throw{cm="git add .", root=root.."/"..pkgname}

@@ -26,6 +26,28 @@ function Cm.absolutepath(dir)
     end
 end
 
+--extract the basename of a directory
+function Cm.basename(dir)
+    if Cm.isdir(dir) then
+        return Cm.capturestdout("basename "..dir)
+    else
+        error("ArgumentError: not a valid path to a directory.")
+    end
+end
+--extract parent directory
+function Cm.parentdir(dir)
+    if Cm.isdir(dir) then
+        return Cm.capturestdout("dirname "..dir)
+    else
+        error("ArgumentError: not a valid path to a directory.")
+    end
+end
+
+--extract name of parent directory
+function Cm.parentdirname(dir)
+    return Cm.basename(Cm.parentdir(dir))
+end
+
 --run command and return success or failure
 function Cm.success(args)
     if type(args.cm)~="string" then
