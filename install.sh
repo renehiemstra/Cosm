@@ -67,6 +67,7 @@ install_cosm_cli(){
   git clone https://github.com/renehiemstra/Cosm.git .tmp >/dev/null 2>&1
   # copy non-git and non-test files only
   rsync -av --exclude=".git*" --exclude="test*" --exclude=install.sh .tmp/* .cosm >/dev/null 2>&1
+  cp -r .tmp/templates/* lang/*
   rm -rf .tmp
   # add the cosm cli bash script to the path variable
   echo "export PATH=\"\${PATH}:${COSM_DEPOT_PATH}/.cosm/bin\"" >> ${BASH_PROFILE}
