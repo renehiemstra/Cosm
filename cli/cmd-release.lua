@@ -1,6 +1,6 @@
 package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 
-local Reg = require("src.registry")
+local Pkg = require("src.pkg")
 local Cm = require("src.command")
 
 local function abort()
@@ -9,7 +9,7 @@ local function abort()
 end
 
 local function printstats(pkg)
-    print("Released "..pkg.name.." v"..pkg.version.." to "..pkg.registry.."\n")
+    print("Released "..pkg.name.." v"..pkg.version..".\n")
 end
 
 --extract command line arguments
@@ -24,7 +24,7 @@ if nargs==1 then
     else
         abort()
     end
-    local pkg = Reg.release(release)
+    local pkg = Pkg.release(release)
     printstats(pkg)
 else
     abort()

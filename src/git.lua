@@ -103,6 +103,10 @@ function Git.tag(root, version, message)
         "git tag -a "..Base.esc(version).." -m "..Base.esc(message))
 end
 
+function Git.istagged(root, version)
+    return version==Cm.capturestdout("cd "..root.."; git tag -l "..version)
+end
+
 function Git.push(root, options)
     os.execute(
         "cd "..root.."; "..

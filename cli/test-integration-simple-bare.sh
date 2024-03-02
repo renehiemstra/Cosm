@@ -12,30 +12,33 @@ cleanup_reg(){
     rm -rf "$DEPOT_PATH/localhub/$reg"
     cosm registry delete "$reg" --force
 }
+# ToDo: add a check for validity of the git remote url
 
-# register pkg to TestRegistry
-registry_add(){
-    cwd=$(pwd)
-    registry="$1"
-    pkg="$2"
+remote_add(){
+    cwd=$PWD
+    # create remote repo
+    pkg=$1
+    mkdir -p $DEPOT_PATH/localhub/$pkg
+    cd $DEPOT_PATH/localhub/$pkg
+    git init --bare
+    # add remote to project
     cd "$DEPOT_PATH/dev/$pkg"
-    localhub_add $pkg
     git remote add origin $DEPOT_PATH/localhub/$pkg
     git add .
     git commit -m "<dep> added dependencies"
     git push --set-upstream origin main
-    cd "$DEPOT_PATH/registries/TestRegistry"
-    cosm registry add $registry $DEPOT_PATH/localhub/$pkg
     cd "$cwd"
 }
-# ToDo: add a check for validity of the git remote url
 
-localhub_add(){
+add_commit_push(){
     cwd=$PWD
-    remote=$1
-    mkdir -p $DEPOT_PATH/localhub/$remote
-    cd $DEPOT_PATH/localhub/$remote
-    git init --bare
+    # create remote repo
+    pkg=$1
+    cd "$DEPOT_PATH/dev/$pkg"
+    git add .
+    git commit -m "<wip>"
+    git pull
+    git push
     cd "$cwd"
 }
 
@@ -45,7 +48,9 @@ runall(){
     mkdir $DEPOT_PATH/localhub
     
     # create local registry
-    localhub_add TestRegistry
+    mkdir -p $DEPOT_PATH/localhub/TestRegistry
+    cd $DEPOT_PATH/localhub/TestRegistry
+    git init --bare
     cosm registry init TestRegistry $DEPOT_PATH/localhub/TestRegistry
 
     # root folder in which to create packages
@@ -58,51 +63,74 @@ runall(){
     cosm init Example
 
     # release DepDep to TestRegistry
-    registry_add TestRegistry DepDep
     # imagine we make some improvements to DepDep and
     # we bring out several more versions
     cd $DEPOT_PATH/dev/DepDep
+    remote_add "DepDep"
+    add_commit_push DepDep
     cosm release --patch    # v0.1.1
+    add_commit_push DepDep
     cosm release --minor    # v0.2.0
+    add_commit_push DepDep
     cosm release --major    # v1.0.0
+    add_commit_push DepDep
     cosm release --patch    # v1.0.1
+    add_commit_push DepDep
     cosm release v2.1.1
-    
+
+    # add some releases to the registry
+    cosm registry add TestRegistry v0.1.1 $DEPOT_PATH/localhub/DepDep
+    cosm registry add TestRegistry v0.2.0 $DEPOT_PATH/localhub/DepDep
+    cosm registry add TestRegistry v1.0.0 $DEPOT_PATH/localhub/DepDep
+    cosm registry add TestRegistry v1.0.1 $DEPOT_PATH/localhub/DepDep
+    cosm registry add TestRegistry v2.1.1 $DEPOT_PATH/localhub/DepDep
+
     # add dependency to DepA
     cd $DEPOT_PATH/dev/DepA
     cosm add DepDep v0.2.0
     # release DepA to TestRegistry
-    registry_add TestRegistry DepA
+    remote_add "DepA"
+    add_commit_push DepA
     cosm release --patch    # v0.1.1
+    add_commit_push DepA
     cosm release --minor    # v0.2.0
+    # add to registry
+    cosm registry add TestRegistry v0.1.1 $DEPOT_PATH/localhub/DepA
+    cosm registry add TestRegistry v0.2.0 $DEPOT_PATH/localhub/DepA
 
     # add dependency to DepB
     cd $DEPOT_PATH/dev/DepB
     cosm add DepDep v1.0.0
     # release DepB to TestRegistry
-    registry_add TestRegistry DepB
+    remote_add "DepB"
+    add_commit_push DepB
     cosm release --minor    # v0.2.0
+    add_commit_push DepB
     cosm release --major    # v1.0.0
+    add_commit_push DepB
     cosm release --patch    # v1.0.1
+    # add to registry
+    cosm registry add TestRegistry v0.2.0 $DEPOT_PATH/localhub/DepB
+    cosm registry add TestRegistry v1.0.0 $DEPOT_PATH/localhub/DepB
+    cosm registry add TestRegistry v1.0.1 $DEPOT_PATH/localhub/DepB
 
     cd $DEPOT_PATH/dev/Example
     cosm add DepA v0.2.0
-    registry_add TestRegistry Example    # v0.1.0
     cosm add DepB --latest
     cosm downgrade DepB v1.0.0
     cosm upgrade DepB v1.0.1
-    git add .
-    git commit -m "<dep> added DepB"
-    git push --set-upstream origin main
+    remote_add "Example"
+    add_commit_push Example
     cosm release --minor    # v0.2.0
+    # add to registry
+    cosm registry add TestRegistry v0.2.0 $DEPOT_PATH/localhub/Example
 
-    # update the registry (although)
+    # update the registry
     cosm registry update TestRegistry
     cosm registry update --all
 
     # remove packages
     cosm registry rm TestRegistry DepDep --force
-    cosm registry rm TestRegistry DepA v0.1.0 --force
     cosm registry rm TestRegistry DepA v0.1.1 --force
     cosm registry rm TestRegistry DepA v0.2.0 --force
 }

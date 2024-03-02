@@ -54,17 +54,23 @@ function Reg.loadregistries()
   return list
 end
 
+local function isapkg(registry, pkgname)
+  registry.path = Reg.regdir.."/"..registry.name
+  --pull changes from remote
+  Cm.throw{cm="git pull", root=registry.path}
+  registry.table = dofile(registry.path.."/Registry.lua")
+  --check if pkgname is present
+  if registry.table.packages[pkgname]~=nil then
+    return true --currently we break with the first encountered package
+  end
+end
+
 --find pkgname in known registries. Load name, path, and table to registry
 function Reg.loadregistry(registry, pkgname)
   for _,regname in pairs(Reg.loadregistries()) do
-      --load registry
       registry.name = regname
-      registry.path = Reg.regdir.."/"..registry.name
-      Cm.throw{cm="git pull", root=registry.path} --pull changes from remote
-      registry.table = dofile(registry.path.."/Registry.lua")
-      --check if pkgname is present
-      if registry.table.packages[pkgname]~=nil then
-          return true --currently we break with the first encountered package
+      if isapkg(registry, pkgname) then
+        return true
       end
   end
   return false
@@ -384,18 +390,22 @@ function Reg.rmpkgversion(registry, pkg)
 end
 
 --register a package to a registry
---signature Reg.register{reg=..., url=...}
+--signature Reg.register{reg=..., release=..., url=...}
 function Reg.register(args)
-  --check keyword arguments
-  if args.reg==nil then
-    error("Provide `reg` (registry) name.\n")
-  elseif args.url==nil then
-    error("Provide package `url`.\n")
-  end
+  --check registry argument
   if type(args.reg)~="string" then
-    error("Provide `reg` (registry) name as a string.\n")
+    error("Provide `reg` (registry) name.\n")
+  end
+  --check release argument
+  if args.release==nil then
+    error("Provide `release` to add to registry.\n")
+  end
+  local release = Semver.parse(args.release)
+  --check git url
+  if args.url==nil then
+    error("Provide package `url`.\n")
   elseif not Git.validnonemptygitrepo(args.url) then
-    error("Provide package git `url` as a string")
+    error("The remote repository should be a valid non-empty repository.")
   end
   --check if registry name points to a valid registry
   if not Reg.isreg(Reg.regdir.."/"..args.reg) then
@@ -405,29 +415,31 @@ function Reg.register(args)
   local tmpdir = Proj.terrahome.."/clones/.tmp"
   Cm.throw{cm="rm -rf "..tmpdir}
   Proj.clone{name="tmp-cloned-pkg", url=args.url, root=tmpdir}
-
+  --check if version is already tagged
+  Cm.throw{cm="git fetch --tags", root=tmpdir.."/tmp-cloned-pkg"}
+  local tag = "v"..tostring(release)
+  if not Git.istagged(tmpdir.."/tmp-cloned-pkg", tag) then
+      error("Not a valid release. Check released tags on your git remote.")
+  end
   --initialize registry properties
   local registry = {}
   registry.name = args.reg
   registry.path = Reg.regdir.."/"..registry.name
   registry.table = dofile(registry.path.."/Registry.lua")
-
   --copy package from tmp folder to .cosm/clones/<uuid>
   local src = tmpdir.."/tmp-cloned-pkg"
+  Cm.throw{cm="git checkout "..tag, root=src}
   local pkg = dofile(src.."/".."Project.lua")
   local dest = Proj.terrahome.."/clones/"..pkg.uuid
   --copy package to .cosm/clones/<uuid>
+  Cm.throw{cm="rm -rf "..dest}
   Cm.throw{cm="cp -r "..src.." "..dest}
   Cm.throw{cm="rm -rf "..tmpdir}
-  
   --initialize package properties
   pkg.dir = dest
   pkg.url = args.url
-  pkg.specpath = string.sub(pkg.name, 1, 1).."/"..pkg.name --P/Pkg
+  pkg.specpath = string.upper(string.sub(pkg.name, 1, 1)).."/"..pkg.name --P/Pkg
   pkg.sha1 = Git.hash(pkg.dir)
-  --push git tags
-  Cm.throw{cm="git tag v"..pkg.version, root=pkg.dir }
-  Cm.throw{cm="git push origin v"..pkg.version, root=pkg.dir }
   --update registry pkg list and save
   registry.table.packages[pkg.name] = { uuid = pkg.uuid, path = pkg.specpath}        
   Reg.save(registry.table, "Registry.lua", registry.path)
@@ -446,70 +458,70 @@ end
 -- function Reg.deregister(args)
 -- end
 
---release a new pkg version to the registry
---signature: Reg.release{release=...("patch", "minor","major", or a version number)}
-function Reg.release(pkgrelease)
-  -- --check keyword argument `release`
-  -- if not ((pkgrelease=="patch") or (pkgrelease=="minor") or (pkgrelease=="major")) then
-  --   error("Provide `release` equal to \"patch\", \"minor\", or \"major\".\n\n")
-  -- end
-  --check if current directory is a valid package
-  if not Proj.ispkg(".") then
-    error("Current directory does not follow the specifications of a cosm pkg.\n")
-  end
-  --check if all work is added and committed
-  if not Git.nodiff(".") or not Git.nodiffstaged(".") then
-    error("Git repository has changes that are unstaged or uncommited. First stage and commit your work. Then release your package.\n")
-  end
-  --initialize package
-  local pkg = dofile("Project.lua")
-  pkg.dir = "."
-  --initialize registry
-  local registry = {}
-  if not Reg.loadregistry(registry, pkg.name) then
-    error("Package "..pkg.name.." is not registered in any of the listed registries.")
-  end
-  --increase package version
-  local oldversion = Semver.parse(pkg.version)
-  local version
-  if pkgrelease=="patch" then
-    version = oldversion:nextPatch()
-  elseif pkgrelease=="minor" then
-    version = oldversion:nextMinor()
-  elseif pkgrelease=="major" then
-    version = oldversion:nextMajor()
-  else
-    version = Semver.parse(pkgrelease)
-    if version <= oldversion then
-      error("New version is older than old version.")
-    end
-  end
-  pkg.version = tostring(version)
-  pkg.url = Git.remotegeturl(".")
-  pkg.registry = registry.name
-  Proj.save(pkg, "Project.lua", ".")
+-- --release a new pkg version to the registry
+-- --signature: Reg.release{release=...("patch", "minor","major", or a version number)}
+-- function Reg.release(pkgrelease)
+--   -- --check keyword argument `release`
+--   -- if not ((pkgrelease=="patch") or (pkgrelease=="minor") or (pkgrelease=="major")) then
+--   --   error("Provide `release` equal to \"patch\", \"minor\", or \"major\".\n\n")
+--   -- end
+--   --check if current directory is a valid package
+--   if not Proj.ispkg(".") then
+--     error("Current directory does not follow the specifications of a cosm pkg.\n")
+--   end
+--   --check if all work is added and committed
+--   if not Git.nodiff(".") or not Git.nodiffstaged(".") then
+--     error("Git repository has changes that are unstaged or uncommited. First stage and commit your work. Then release your package.\n")
+--   end
+--   --initialize package
+--   local pkg = dofile("Project.lua")
+--   pkg.dir = "."
+--   --initialize registry
+--   local registry = {}
+--   if not Reg.loadregistry(registry, pkg.name) then
+--     error("Package "..pkg.name.." is not registered in any of the listed registries.")
+--   end
+--   --increase package version
+--   local oldversion = Semver.parse(pkg.version)
+--   local version
+--   if pkgrelease=="patch" then
+--     version = oldversion:nextPatch()
+--   elseif pkgrelease=="minor" then
+--     version = oldversion:nextMinor()
+--   elseif pkgrelease=="major" then
+--     version = oldversion:nextMajor()
+--   else
+--     version = Semver.parse(pkgrelease)
+--     if version <= oldversion then
+--       error("New version is older than old version.")
+--     end
+--   end
+--   pkg.version = tostring(version)
+--   pkg.url = Git.remotegeturl(".")
+--   pkg.registry = registry.name
+--   Proj.save(pkg, "Project.lua", ".")
 
-  --create pkg specs-list
-  local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.version.."\""
-  Cm.throw{cm="git add .", root="."}
-  Cm.throw{cm="git commit -m "..commitmessage, root="."}
-  Cm.throw{cm="git push", root="."}
-  Cm.throw{cm="git tag v"..pkg.version, root="."}
-  Cm.throw{cm="git push origin v"..pkg.version, root="."}
-  pkg.sha1 = Git.hash(pkg.dir)
+--   --create pkg specs-list
+--   local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.version.."\""
+--   Cm.throw{cm="git add .", root="."}
+--   Cm.throw{cm="git commit -m "..commitmessage, root="."}
+--   Cm.throw{cm="git push", root="."}
+--   Cm.throw{cm="git tag v"..pkg.version, root="."}
+--   Cm.throw{cm="git push origin v"..pkg.version, root="."}
+--   pkg.sha1 = Git.hash(pkg.dir)
 
-  --get specs and update them
-  local specs = registry.table.packages[pkg.name]
-  pkg.specpath = specs.path
-  initpkgspecs(registry, pkg)
+--   --get specs and update them
+--   local specs = registry.table.packages[pkg.name]
+--   pkg.specpath = specs.path
+--   initpkgspecs(registry, pkg)
 
-  --update registry remote git repository
-  Cm.throw{cm="git add .", root=registry.path}
-  Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
-  Cm.throw{cm="git pull", root=registry.path}
-  Cm.throw{cm="git push", root=registry.path}
+--   --update registry remote git repository
+--   Cm.throw{cm="git add .", root=registry.path}
+--   Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
+--   Cm.throw{cm="git pull", root=registry.path}
+--   Cm.throw{cm="git push", root=registry.path}
 
-  return pkg --return all updated pkg info
-end
+--   return pkg --return all updated pkg info
+-- end
 
 return Reg

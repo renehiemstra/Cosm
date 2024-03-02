@@ -1,4 +1,5 @@
 local Cm = require("src.command")
+local Git = require("src.git")
 local Proj = require("src.project")
 local Reg = require("src.registry")
 local Semver = require("src.semver")
@@ -240,5 +241,61 @@ function Pkg.downgrade(args)
     Pkg.rm(args)
     Pkg.add(args)
 end
+
+--release a new pkg version to the registry
+--signature: Reg.release{release=...("patch", "minor","major", or a version number)}
+function Pkg.release(release)
+    -- --check keyword argument `release`
+    -- if not ((pkgrelease=="patch") or (pkgrelease=="minor") or (pkgrelease=="major")) then
+    --   error("Provide `release` equal to \"patch\", \"minor\", or \"major\".\n\n")
+    -- end
+    --check if current directory is a valid package
+    if not Proj.ispkg(".") then
+      error("Current directory does not follow the specifications of a cosm pkg.\n")
+    end
+    --check if all work is added and committed
+    if not Git.nodiff(".") or not Git.nodiffstaged(".") then
+      error("Git repository has changes that are unstaged or uncommited. First stage and commit your work. Then release your package.\n")
+    end
+    --initialize package
+    local pkg = dofile("Project.lua")
+    pkg.dir = "."
+    --increase package version
+    local oldversion = Semver.parse(pkg.version)
+    local version
+    if release=="patch" then
+      version = oldversion:nextPatch()
+    elseif release=="minor" then
+      version = oldversion:nextMinor()
+    elseif release=="major" then
+      version = oldversion:nextMajor()
+    else
+      version = Semver.parse(release)
+      -- make sure the release is different than the current semantic version
+      if version==oldversion then --check equality of version number and prerelease
+        --check of build is the same
+        if version.build==oldversion.build then
+            error("Version nummber, prerelease and build is the same as the current one.")
+        end
+      end
+    end
+    pkg.version = tostring(version)
+    Cm.throw{cm="git fetch --tags"}
+    --check if version is already tagged
+    if Git.istagged(".", "v"..pkg.version) then
+        error("Exact same version is already released")
+    end
+    --save Project.lua with new version number
+    Proj.save(pkg, "Project.lua", ".")
+    --add and commit changes, push commit, and tag version and push to remote
+    local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.version.."\""
+    Cm.throw{cm="git add ."}
+    Cm.throw{cm="git commit -m "..commitmessage}
+    Cm.throw{cm="git push"}
+    Cm.throw{cm="git tag v"..pkg.version}
+    Cm.throw{cm="git push origin v"..pkg.version}
+    return pkg --return all updated pkg info
+end
+  
 
 return Pkg

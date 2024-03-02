@@ -55,4 +55,16 @@ function testIgnoreFile()
   Cm.rmdir("tmp") --cleanup
 end
 
+function testIsTagged()
+  Cm.mkdir("tmp")
+  Cm.throw{cm="git init", root="tmp"}
+  Cm.throw{cm="touch README.md; echo \"my new project\" >> README.md", root="tmp"}
+  Cm.throw{cm="git add .; git commit -m \"added readme\"", root="tmp"}
+  lu.assertFalse(Git.istagged("tmp", "v0.1.0"))
+  Cm.throw{cm="git tag v0.1.0", root="tmp"}
+  lu.assertTrue(Git.istagged("tmp", "v0.1.0"))
+
+  Cm.rmdir("tmp") --cleanup
+end
+
 lu.LuaUnit.run()
