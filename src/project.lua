@@ -14,6 +14,10 @@ function Proj.require(depname)
   local callfile = debug.getinfo(2, "S").source:sub(2)
   --determine the folder of this file
   local calldir = callfile:match("(.*/)")
+  --special case where the call emenates from same dir as lua file
+  if calldir==nil then
+    calldir = "."
+  end
   --check if root is an actual pkg
   if not Proj.ispkg(calldir.."/..") then
     error("Error: Directory does not satisfy the requirements of a package.\n\n")
