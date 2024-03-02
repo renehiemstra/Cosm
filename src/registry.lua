@@ -431,15 +431,16 @@ function Reg.register(args)
   Cm.throw{cm="git checkout "..tag, root=src}
   local pkg = dofile(src.."/".."Project.lua")
   local dest = Proj.terrahome.."/clones/"..pkg.uuid
-  --copy package to .cosm/clones/<uuid>
-  Cm.throw{cm="rm -rf "..dest}
-  Cm.throw{cm="cp -r "..src.." "..dest}
-  Cm.throw{cm="rm -rf "..tmpdir}
   --initialize package properties
   pkg.dir = dest
   pkg.url = args.url
   pkg.specpath = string.upper(string.sub(pkg.name, 1, 1)).."/"..pkg.name --P/Pkg
-  pkg.sha1 = Git.hash(pkg.dir)
+  pkg.sha1 = Git.hash(src)
+  --copy package to .cosm/clones/<uuid>
+  Cm.throw{cm="git checkout -", root=src}
+  Cm.throw{cm="rm -rf "..dest}
+  Cm.throw{cm="cp -r "..src.." "..dest}
+  Cm.throw{cm="rm -rf "..tmpdir}
   --update registry pkg list and save
   registry.table.packages[pkg.name] = { uuid = pkg.uuid, path = pkg.specpath}        
   Reg.save(registry.table, "Registry.lua", registry.path)

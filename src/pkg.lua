@@ -106,6 +106,7 @@ function Pkg.add(args)
     --make depdendency available (fetch from remote, copy source to packages)
     dep.specs = dofile(versionpath.."/Specs.lua")
     local dest = Proj.terrahome.."/packages/"..dep.name.."/"..dep.specs.sha1
+    print("Copying source to packages")
     if not Cm.isdir(dest) then
         Pkg.fetch(dep.specs) --checkout version in .cosm/clones/<uuid> or checkout from remote repo
         --leads to a detached HEAD
@@ -115,6 +116,7 @@ function Pkg.add(args)
         --copy all files and directories, except .git*
         Cm.throw{cm="rsync -av --exclude=\".git*\" "..src.."/ "..dest}
         Cm.throw{cm="git checkout -", root=src} --reset HEAD to previous
+        print("Done copying, package added")
     end
     --add pkg.dep to the project dependencies
     pkg.deps[dep.name] = dep.version

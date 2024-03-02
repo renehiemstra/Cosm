@@ -130,7 +130,7 @@ runall(){
     cosm registry update --all
 
     # remove packages
-    cosm registry rm TestRegistry DepDep --force
+    # cosm registry rm TestRegistry DepDep --force
     cosm registry rm TestRegistry DepA v0.1.1 --force
     cosm registry rm TestRegistry DepA v0.2.0 --force
 }
@@ -144,7 +144,7 @@ cleanall(){
     rm -rf "$DEPOT_PATH/clones"
     mkdir "$DEPOT_PATH/clones"
     rm -rf "$DEPOT_PATH/packages"
-    mkdir "$DEPOT_PATH/clones"
+    mkdir "$DEPOT_PATH/packages"
 }
 
 # no input arguments - run test and cleanup
