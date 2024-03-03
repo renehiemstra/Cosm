@@ -28,19 +28,11 @@ end
 
 --extract the basename of a directory
 function Cm.basename(dir)
-    if Cm.isdir(dir) then
-        return Cm.capturestdout("basename "..dir)
-    else
-        error("ArgumentError: not a valid path to a directory.")
-    end
+    return Cm.capturestdout("basename "..dir)
 end
 --extract parent directory
 function Cm.parentdir(dir)
-    if Cm.isdir(dir) then
-        return Cm.capturestdout("dirname "..dir)
-    else
-        error("ArgumentError: not a valid path to a directory.")
-    end
+    return Cm.capturestdout("dirname "..dir)
 end
 
 --extract name of parent directory

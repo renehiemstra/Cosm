@@ -17,17 +17,22 @@ local function find_and_replace_expr_in_file_and_dir_names(oldexpr, newexpr, roo
     Cm.throw{cm="for file in `find . -type f -name '*"..oldexpr.."*'`; do mv -v \"$file\" \"${file/"..oldexpr.."/"..newexpr.."}\"; done", root=root}
 end
 
-function Lang.project_from_template(template, pkgname, root)
+function Lang.project_from_template(templatedir, pkgname, root)
+    local lang = Cm.parentdirname(templatedir)
+    local template = Cm.basename(templatedir)
+    if lang.."/"..template~=templatedir then
+        error("Provide template as a path relative to "..Lang.langdir..".\n")
+    end
     --check that language is supported
-    if not Cm.parentdir(template) then
-        error("Language "..Cm.parentdirname(template).." is not available. Check your local languages folder in "..Lang.langdir..".\n")
+    if not Cm.isdir(Lang.langdir.."/"..lang) then
+        error("Language "..lang.." is not available. Check your local languages folder in "..Lang.langdir..".\n")
     end
     --check that template is supported
-    if not Cm.isdir(template) then
-        error("Template "..Cm.basename(template).." is not available. Check your local languages folder in "..Cm.parentdir(template)..".\n")
+    if not Cm.isdir(Lang.langdir.."/"..lang.."/"..template) then
+        error("Template "..template.." is not available. Check your local languages folder in "..Lang.langdir.."/"..lang..".\n")
     end
     --copy template to a temporary folder
-    Cm.throw{cm="cp -r "..template.." "..Lang.langdir.."/.tmp"}
+    Cm.throw{cm="cp -r "..template.." "..Lang.langdir.."/.tmp", root=Lang.langdir.."/"..lang}
     --replace all occurences of 'PkgTemplate' with pkgname
     find_and_replace_expr_inside_files("PkgTemplate", pkgname, Lang.langdir.."/.tmp")
     find_and_replace_expr_in_file_and_dir_names("PkgTemplate", pkgname, Lang.langdir.."/.tmp")
