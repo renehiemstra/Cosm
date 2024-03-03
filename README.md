@@ -30,11 +30,9 @@ cosm registry status <registry name>    (implemented)
 
 ## instantiate a new package
 ```
-cosm init <name>                        (implemented)
-cosm init <name> -t <template>          (not implemented)
-cosm init <name> --template <template>  (not implemented)
+cosm init <package name> <language/template>                        (implemented)
 ```
-*Evaluate in parent folder of a new package. Adds a new package with name <name> according to a template (in .cosm/templates). Currently, only a lua template is implemented.*
+*Evaluate in parent folder of a new package. Adds a new package with name <package name> according to a template (in .cosm/lang). Currently, only a lua and terra template are implemented.*
 
 ## instantiate a new registry / delete a registry / update a registry
 ```
