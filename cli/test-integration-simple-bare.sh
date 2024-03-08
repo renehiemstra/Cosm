@@ -32,7 +32,6 @@ remote_add(){
 
 add_commit_push(){
     cwd=$PWD
-    # create remote repo
     pkg=$1
     cd "$DEPOT_PATH/dev/$pkg"
     git add .

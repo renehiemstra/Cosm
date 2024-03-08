@@ -22,7 +22,7 @@ if nargs==2 then
     --check remote url is a valid git url or bare repo
     if Cm.isdir(arg[2]) then
         registry.url  = Cm.absolutepath(arg[2])
-    elseif Git.validnonemptygitrepo(arg[2]) then
+    elseif Git.validemptygitrepo(arg[2]) then
         registry.url = arg[2]
     else
         abort("ArgumentError: argument "..arg[2].." is not a bare repo or valid git url.")

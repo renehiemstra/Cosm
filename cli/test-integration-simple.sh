@@ -13,21 +13,28 @@ cleanup_reg(){
     cosm registry delete "$reg" --force
 }
 
-# register pkg to TestRegistry
-registry_add(){
-    cwd=$(pwd)
-    pkg="$1"
+remote_add(){
+    cwd=$PWD
+    pkg=$1
     cd "$DEPOT_PATH/dev/$pkg"
     gh repo create "$pkg" --public
     git remote add origin git@github.com:renehiemstra/"$pkg".git
     git add .
     git commit -m "<dep> added dependencies"
     git push --set-upstream origin main
-    cd "$DEPOT_PATH/registries/TestRegistry"
-    cosm registry add git@github.com:renehiemstra/"$pkg".git
     cd "$cwd"
 }
-# ToDo: add a check for validity of the git remote url
+
+add_commit_push(){
+    cwd=$PWD
+    pkg=$1
+    cd "$DEPOT_PATH/dev/$pkg"
+    git add .
+    git commit -m "<wip>"
+    git pull
+    git push
+    cd "$cwd"
+}
 
 # code that runs the test
 runall(){
@@ -39,48 +46,82 @@ runall(){
     cd $DEPOT_PATH/dev
 
     # create packages
-    cosm init DepA
-    cosm init DepB
-    cosm init DepDep
-    cosm init Example
+    cosm init DepA lua/PkgTemplate
+    cosm init DepB lua/PkgTemplate
+    cosm init DepDep lua/PkgTemplate
+    cosm init Example lua/PkgTemplate
 
     # release DepDep to TestRegistry
-    registry_add DepDep
     # imagine we make some improvements to DepDep and
     # we bring out several more versions
     cd $DEPOT_PATH/dev/DepDep
+    remote_add "DepDep"
+    add_commit_push DepDep
     cosm release --patch    # v0.1.1
+    add_commit_push DepDep
     cosm release --minor    # v0.2.0
+    add_commit_push DepDep
     cosm release --major    # v1.0.0
+    add_commit_push DepDep
     cosm release --patch    # v1.0.1
+    add_commit_push DepDep
+    cosm release v2.1.1
     
+    # add some releases to the registry
+    cosm registry add TestRegistry v0.1.1 git@github.com:renehiemstra/DepDep
+    cosm registry add TestRegistry v0.2.0 git@github.com:renehiemstra/DepDep
+    cosm registry add TestRegistry v1.0.0 git@github.com:renehiemstra/DepDep
+    cosm registry add TestRegistry v1.0.1 git@github.com:renehiemstra/DepDep
+    cosm registry add TestRegistry v2.1.1 git@github.com:renehiemstra/DepDep
+
     # add dependency to DepA
     cd $DEPOT_PATH/dev/DepA
     cosm add DepDep v0.2.0
     # release DepA to TestRegistry
-    registry_add DepA
+    remote_add "DepA"
+    add_commit_push DepA
     cosm release --patch    # v0.1.1
+    add_commit_push DepA
     cosm release --minor    # v0.2.0
+    # add to registry
+    cosm registry add TestRegistry v0.1.1 git@github.com:renehiemstra/DepA
+    cosm registry add TestRegistry v0.2.0 git@github.com:renehiemstra/DepA
 
     # add dependency to DepB
     cd $DEPOT_PATH/dev/DepB
     cosm add DepDep v1.0.0
     # release DepB to TestRegistry
-    registry_add DepB
+    remote_add "DepB"
+    add_commit_push DepB
     cosm release --minor    # v0.2.0
+    add_commit_push DepB
     cosm release --major    # v1.0.0
+    add_commit_push DepB
     cosm release --patch    # v1.0.1
+    # add to registry
+    cosm registry add TestRegistry v0.2.0 git@github.com:renehiemstra/DepB
+    cosm registry add TestRegistry v1.0.0 git@github.com:renehiemstra/DepB
+    cosm registry add TestRegistry v1.0.1 git@github.com:renehiemstra/DepB
 
     cd $DEPOT_PATH/dev/Example
     cosm add DepA v0.2.0
-    registry_add Example    # v0.1.0
     cosm add DepB --latest
     cosm downgrade DepB v1.0.0
     cosm upgrade DepB v1.0.1
-    git add .
-    git commit -m "<dep> added DepB"
-    git push --set-upstream origin main
+    remote_add "Example"
+    add_commit_push Example
     cosm release --minor    # v0.2.0
+    # add to registry
+    cosm registry add TestRegistry v0.2.0 git@github.com:renehiemstra/Example
+
+    # update the registry
+    cosm registry update TestRegistry
+    cosm registry update --all
+
+    # remove packages
+    # cosm registry rm TestRegistry DepDep --force
+    cosm registry rm TestRegistry DepA v0.1.1 --force
+    cosm registry rm TestRegistry DepA v0.2.0 --force
 }
 
 cleanall(){
