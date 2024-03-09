@@ -1,3 +1,4 @@
+local Base = require("src.base") 
 local Cm = require("src.command")
 local Git = require("src.git")
 local Proj = require("src.project")
@@ -55,6 +56,71 @@ function Pkg.fetch(specs)
     end
 end
 
+--assumes registry is initialized via Reg.loadregistry(...)
+local function loadpkgspecs(registry, pkgname, pkgversion)
+    local versionpath = registry.path.."/"..registry.table.packages[pkgname].path.."/"..pkgversion
+    print(versionpath)
+    if not Cm.isdir(versionpath) then
+        error("Package "..pkgname.." is registered in "..registry.name..", but version "..pkgversion.." is lacking.\n\n")
+    end
+    return dofile(versionpath.."/Specs.lua")
+end
+
+local function addtobuildlist(list, pkg, version)
+    --create table entry of version for this dependency
+    if list[pkg]==nil then
+        list[pkg] = {}
+        Base.mark_as_array(list[pkg])
+    end
+    --insert version of dependency in associated table
+    table.insert(list[pkg], version)
+    --get specs of this dependency
+    local registry = {} --{name, path, table}
+    local specs
+    if Reg.loadregistry(registry, pkg) then
+        specs = loadpkgspecs(registry, pkg, version)
+    end
+    --recursively add dependencies to buildlist
+    for depname,depversion in pairs(specs.deps) do
+        addtobuildlist(list, depname, depversion)
+    end
+end
+
+local function getbuildlist(root)
+    if not Proj.ispkg(root) then
+        error("Current directory is not a valid package.")
+    end
+    --our build list
+    local list = {}
+    local pkg = fetchprojecttable(root)
+    --loop over direct dependencies of our project
+    for depname,depversion in pairs(pkg.deps) do
+        addtobuildlist(list, depname, depversion)
+    end
+    return list
+end
+
+local function savebuildlist(list, root)
+    --open Buildlist.lua and set to stdout
+    Cm.throw{cm="mkdir -p .cosm", root=root}
+    Cm.throw{cm="touch .cosm/Buildlist.lua", root=root}
+    local file = io.open(root.."/.cosm/Buildlist.lua", "w")
+    io.output(file)
+    --write main project data to file
+    io.write("Buildlist = {\n")
+    for key, value in pairs(list) do
+        io.write("    ", key, " = ")
+        Base.serialize(value, 2)
+    end
+    io.write("}\n")
+    io.write("return Buildlist")
+end
+
+function Pkg.buildlist(root)
+    local list = getbuildlist(root)
+    savebuildlist(list, root)
+end
+
 --add a dependency to a project
 --signature Pkg.add{dep="...", version="xx.xx.xx"; root="."}
 function Pkg.add(args)
@@ -103,7 +169,7 @@ function Pkg.add(args)
     if not Cm.isdir(versionpath) then
         error("Package "..dep.name.." is registered in "..registry.name..", but version "..dep.version.." is lacking.\n\n")
     end
-    --make depdendency available (fetch from remote, copy source to packages)
+    --make dependency available (fetch from remote, copy source to packages)
     dep.specs = dofile(versionpath.."/Specs.lua")
     local dest = Proj.terrahome.."/packages/"..dep.name.."/"..dep.specs.sha1
     print("Copying source to packages")

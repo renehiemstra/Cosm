@@ -243,6 +243,9 @@ case "$1" in
         release "${@:2}"
         ;;
 
+    build)
+        lua $COSM_DIR/cli/cmd-buildlist.lua $PWD "${@:2}"
+        ;;
     *) # default
         printf "cosm: '$1' is not a cosm command. See 'cosm --help'.\n \n"
         exit 1
