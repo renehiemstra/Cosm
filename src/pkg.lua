@@ -70,23 +70,34 @@ local function addtobuildlist(list, pkg, version)
     --create table entry of version for this dependency
     if list[pkg]==nil then
         list[pkg] = {}
-        Base.mark_as_array(list[pkg])
+        Base.mark_as_table(list[pkg])
     end
     --insert version of dependency in associated table
-    table.insert(list[pkg], version)
-    --get specs of this dependency
-    local registry = {} --{name, path, table}
-    local specs
-    if Reg.loadregistry(registry, pkg) then
-        specs = loadpkgspecs(registry, pkg, version)
-    end
-    --recursively add dependencies to buildlist
-    for depname,depversion in pairs(specs.deps) do
-        addtobuildlist(list, depname, depversion)
+    --checking for nil: if dependencies of this version
+    --are already treated then move on without redoing work.
+    if list[pkg][version]==nil then
+        --get specs of this dependency
+        local registry = {} --{name, path, table}
+        local specs
+        if Reg.loadregistry(registry, pkg) then
+            specs = loadpkgspecs(registry, pkg, version)
+        else
+            error("Missing package: "..pkg.." version "..version.." not present in any available registry.\n")
+        end
+        --add to build list
+        list[pkg][version] = { path = "packages/"..specs.name.."/"..specs.sha1}
+        
+        --recursively add dependencies to buildlist
+        for depname,depversion in pairs(specs.deps) do
+            addtobuildlist(list, depname, depversion)
+        end
     end
 end
 
-local function getbuildlist(root)
+--get the raw build list that lists all minimum requirements
+--and still needs to be filtered to obtain the maximum of all 
+--minimal requirements
+local function getrawbuildlist(root)
     if not Proj.ispkg(root) then
         error("Current directory is not a valid package.")
     end
@@ -98,6 +109,19 @@ local function getbuildlist(root)
         addtobuildlist(list, depname, depversion)
     end
     return list
+end
+
+--get the maximum of all minimum requirements
+local function getbuildlist(root)
+    local list = getrawbuildlist(root)
+    for pkg, versions in pairs(list) do
+        -- --count how many versions are listed
+        -- local nv = Base.length(versions)
+        --loop over versions
+        for version, _ in pairs(versions) do
+            Semver.parse("version")
+        end
+    end
 end
 
 local function savebuildlist(list, root)
@@ -117,9 +141,27 @@ local function savebuildlist(list, root)
 end
 
 function Pkg.buildlist(root)
-    local list = getbuildlist(root)
+    local list = getrawbuildlist(root)
     savebuildlist(list, root)
 end
+
+--assumes a valid specs-file
+local function make_available(specs)
+    local dest = Proj.terrahome.."/packages/"..specs.name.."/"..specs.sha1
+    if not Cm.isdir(dest) then
+        Pkg.fetch(specs) --checkout version in .cosm/clones/<uuid> or checkout from remote repo
+        --leads to a detached HEAD
+        --copy source to .cosm/packages
+        local src = Proj.terrahome.."/clones/"..specs.uuid
+        Cm.throw{cm="mkdir -p "..Proj.terrahome.."/packages/"..specs.name}
+        --copy all files and directories, except .git*
+        Cm.throw{cm="rsync -av --exclude=\".git*\" "..src.."/ "..dest}
+        Cm.throw{cm="git checkout -", root=src} --reset HEAD to previous
+        print("Done copying, package added")
+    end
+end
+
+
 
 --add a dependency to a project
 --signature Pkg.add{dep="...", version="xx.xx.xx"; root="."}
@@ -147,6 +189,7 @@ function Pkg.add(args)
     if not found then
         error("Package "..args.dep.." is not a registered package.\n\n")
     end
+    --select version
     dep.path = registry.table.packages[dep.name].path
     if args.version==nil then
         local depversions = dofile(registry.path.."/"..dep.path.."/Versions.lua")
@@ -171,19 +214,8 @@ function Pkg.add(args)
     end
     --make dependency available (fetch from remote, copy source to packages)
     dep.specs = dofile(versionpath.."/Specs.lua")
-    local dest = Proj.terrahome.."/packages/"..dep.name.."/"..dep.specs.sha1
-    print("Copying source to packages")
-    if not Cm.isdir(dest) then
-        Pkg.fetch(dep.specs) --checkout version in .cosm/clones/<uuid> or checkout from remote repo
-        --leads to a detached HEAD
-        --copy source to .cosm/packages
-        local src = Proj.terrahome.."/clones/"..dep.specs.uuid
-        Cm.throw{cm="mkdir -p "..Proj.terrahome.."/packages/"..dep.name}
-        --copy all files and directories, except .git*
-        Cm.throw{cm="rsync -av --exclude=\".git*\" "..src.."/ "..dest}
-        Cm.throw{cm="git checkout -", root=src} --reset HEAD to previous
-        print("Done copying, package added")
-    end
+    make_available(dep.specs)
+
     --add pkg.dep to the project dependencies
     pkg.deps[dep.name] = dep.version
     --save pkg table

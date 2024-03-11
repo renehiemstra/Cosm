@@ -8,7 +8,7 @@ local Proj = {}
 Proj.homedir = Cm.capturestdout("echo ~$user")
 Proj.terrahome = os.getenv("COSM_DEPOT_PATH")
 
---load a terra package
+--load a lua/terra package
 function Proj.require(depname)
   --determine file where the function call emenates from
   local callfile = debug.getinfo(2, "S").source:sub(2)
@@ -118,6 +118,7 @@ function Proj.save(projtable, projfile, root)
   io.write(string.format("  version = %q,\n",projtable.version))
   --write dependencies
   io.write("  deps = ")
+  Base.mark_as_simple_keys(projtable.deps)
   Base.serialize(projtable.deps, 2)
   io.write("}\n")
   io.write("return Project")

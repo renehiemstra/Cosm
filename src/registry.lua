@@ -163,6 +163,7 @@ function Reg.save(regtable, regfile, root)
   io.write(string.format("    url  = %q,\n", regtable.url))
   io.write(string.format("    description = %q,\n", regtable.description))
   io.write("    packages = ")
+  Base.mark_as_simple_keys(regtable.packages) --allows pretty print
   Base.serialize(regtable.packages, 2)
   io.write("}\n")
   io.write("return Registry")
@@ -261,6 +262,7 @@ local function initpkgspecs(reg, pkg)
   io.write(string.format("    url  = %q,\n", pkg.url))
   io.write(string.format("    sha1 = %q,\n", pkg.sha1))
   --write dependencies
+  Base.mark_as_simple_keys(pkg.deps) --allows pretty print
   io.write("    deps = ")
   Base.serialize(pkg.deps, 2)
   io.write("}\n")
