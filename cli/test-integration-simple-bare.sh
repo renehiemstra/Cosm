@@ -128,10 +128,10 @@ runall(){
     cosm registry update TestRegistry
     cosm registry update --all
 
-    # remove packages
-    # cosm registry rm TestRegistry DepDep --force
-    cosm registry rm TestRegistry DepA v0.1.1 --force
-    cosm registry rm TestRegistry DepA v0.2.0 --force
+    # # remove packages
+    # # cosm registry rm TestRegistry DepDep --force
+    # cosm registry rm TestRegistry DepA v0.1.1 --force
+    # cosm registry rm TestRegistry DepA v0.2.0 --force
 }
 
 cleanall(){

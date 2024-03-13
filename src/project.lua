@@ -59,25 +59,16 @@ end
 
 --check if the folder at `root` is a valid package
 function Proj.ispkg(root)
-  if not type(root)=="string" then
-    error("Provide a string as input.")
-  end
   if not Cm.isdir(root) then
-    print("not a directory")
+    print("Not a valid directory.")
     return false
   end
   if not Cm.isfile(root.."/Project.lua") then
-    print("not a project file")
+    print("Not a project file")
     return false
   end
   local pkg = dofile(root.."/Project.lua")
-  local c2 = Cm.isfile(root.."/src/"..pkg.name..".lua")
-  local c3 = Cm.isfile(root.."/src/"..pkg.name..".t")
-  if not (c2 or c3) then
-    print("not a lua or terra file")
-    return false
-  end
-  return Proj.isprojtable(table)
+  return Proj.isprojtable(pkg)
 end
 
 local random = math.random
@@ -118,7 +109,6 @@ function Proj.save(projtable, projfile, root)
   io.write(string.format("  version = %q,\n",projtable.version))
   --write dependencies
   io.write("  deps = ")
-  Base.mark_as_simple_keys(projtable.deps)
   Base.serialize(projtable.deps, 2)
   io.write("}\n")
   io.write("return Project")
@@ -175,6 +165,7 @@ end
 --create a terra pkg template
 function Proj.create(template, pkgname, root)
   --create a project from a template
+  print("going to copy from pkg template")
   Lang.project_from_template(template, pkgname, root)
   --crete Project.lua file
   genprojfile(pkgname, root)

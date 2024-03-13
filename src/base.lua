@@ -24,7 +24,7 @@ function Base.mark_as_simple_keys(t)
   setmetatable(t, {__simplekeys = true})
 end
 
-local function getcustommetatable(t)
+function Base.getcustommetatable(t)
   local mt = getmetatable(t)
   if mt==nil then
     Base.mark_as_table(t)
@@ -37,13 +37,13 @@ end
 
 -- use this when serializing
 function Base.is_array(t)
-  local mt = getcustommetatable(t)
+  local mt = Base.getcustommetatable(t)
   return mt.__isarray==true
 end
 
 -- use this when serializing
 function Base.has_simple_keys(t)
-  local mt = getcustommetatable(t)
+  local mt = Base.getcustommetatable(t)
   return mt.__simplekeys==true
 end
 

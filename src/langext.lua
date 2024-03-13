@@ -31,6 +31,7 @@ function Lang.project_from_template(templatedir, pkgname, root)
     if not Cm.isdir(Lang.langdir.."/"..lang.."/"..template) then
         error("Template "..template.." is not available. Check your local languages folder in "..Lang.langdir.."/"..lang..".\n")
     end
+    print("copying in place")
     --copy template to a temporary folder
     Cm.throw{cm="cp -r "..template.." "..Lang.langdir.."/.tmp", root=Lang.langdir.."/"..lang}
     --replace all occurences of 'PkgTemplate' with pkgname

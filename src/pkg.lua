@@ -19,6 +19,7 @@ local function isdep(root, pkgname)
     local project = fetchprojecttable(root)
     return project.deps[pkgname]
 end
+
 --list the project status
 --expects that `root` directory is a valid pkg root
 function Pkg.status()
@@ -47,6 +48,7 @@ end
 
 --clone package in ~.cosm/clones/<pkg-uuid> and checkout the correct
 --version number
+--assumes specs {name=<pkgname>, version=<pkgversion>, uuid=<...>}
 function Pkg.fetch(specs)
     if Cm.isdir(Proj.terrahome.."/clones/"..specs.uuid) then
         print("directory exists, checking out "..specs.version)
@@ -66,31 +68,138 @@ local function loadpkgspecs(registry, pkgname, pkgversion)
     return dofile(versionpath.."/Specs.lua")
 end
 
-local function addtobuildlist(list, pkg, version)
+local function packageid(pkgname, version)
+    --create package id - 
+    local v = Semver.parse(version)
+    --for unstable releases (v.major==0) every minor release is considered
+    --as a different package    
+    if v.major==0 then
+        return pkgname.."@".."v"..v.major.."."..v.minor
+    --for stable releases (v.major>0) every major release is considered
+    --as a different package
+    else
+        return pkgname.."@".."v"..v.major
+    end
+end
+
+local function addtominrequirmentslist(list, pkgname, version, latest)
+    --get package identifier
+    local pkgid = packageid(pkgname, version)
+    --create table on first entry
+    if list[pkgid]==nil then
+        list[pkgid] = {}
+        Base.mark_as_general_keys(list[pkgid])
+    end
+    --load package from registry
+    local registry = {}
+    local pkg = {name=pkgname, version=version}
+    Pkg.loadpkg(registry, pkg, latest) --upgrade to latest=[true, false]
+    --add entry: 'version' -> latest compatible with 'version'
+    --only do work if case is not yet treated.
+    if list[pkgid][version]==nil then
+        list[pkgid][version] = pkg.version
+        --get specs of this package
+        local specs = loadpkgspecs(registry, pkg.name, pkg.version)
+        --recursively add to minimal requirement list
+        for depname,depversion in pairs(specs.deps) do
+            addtominrequirmentslist(list, depname, depversion, latest)
+        end
+    end
+end
+
+--compute the minimum requirement list
+--<pkg : table> contains the specs of the top-level package
+--<latest : boolean> signals that latest versions are used
+local function minrequirmentslist(pkg, latest)
+    --our minimal requirement list
+    local list = {}
+    --loop over direct dependencies of our project
+    for depname,depversion in pairs(pkg.deps) do
+        addtominrequirmentslist(list, depname, depversion, latest)
+    end
+    return list
+end
+
+local function addtobuildlist(list, req, pkgname, version)
+    --get package identifier
+    local pkgid = packageid(pkgname, version)
     --create table entry of version for this dependency
-    if list[pkg]==nil then
-        list[pkg] = {}
-        Base.mark_as_table(list[pkg])
+    if list[pkgid]==nil then
+        list[pkgid] = {}
+        Base.mark_as_general_keys(list[pkgid])
+    end
+    if req[pkgid]~=nil then
+        version = req[pkgid]
     end
     --insert version of dependency in associated table
     --checking for nil: if dependencies of this version
     --are already treated then move on without redoing work.
-    if list[pkg][version]==nil then
-        --get specs of this dependency
+    if list[pkgid][version]==nil then
+        --load package from registry
         local registry = {} --{name, path, table}
-        local specs
-        if Reg.loadregistry(registry, pkg) then
-            specs = loadpkgspecs(registry, pkg, version)
-        else
-            error("Missing package: "..pkg.." version "..version.." not present in any available registry.\n")
-        end
+        local pkg = {name=pkgname, version=version}
+        Pkg.loadpkg(registry, pkg, false) --latest=true/false
+        --get specs of this package
+        local specs = loadpkgspecs(registry, pkg.name, pkg.version)
         --add to build list
-        list[pkg][version] = { path = "packages/"..specs.name.."/"..specs.sha1}
-        
+        list[pkgid][version] = {
+            -- name=specs.name,
+            version=specs.version,
+            -- path="packages/"..specs.name.."/"..specs.sha1,
+            -- uuid=specs.uuid,
+            -- sha1=specs.sha1,
+            -- url=specs.url
+        }
         --recursively add dependencies to buildlist
         for depname,depversion in pairs(specs.deps) do
-            addtobuildlist(list, depname, depversion)
+            addtobuildlist(list, req, depname, depversion)
         end
+    end
+end
+
+--expects table with keys the version number
+local function selectmaximalversion(listentry)
+    local vold = Semver(0,0,0)
+    for v,_ in pairs(listentry) do
+        local vnew = Semver.parse(v)
+        if vnew > vold then
+            vold = vnew
+        end
+    end
+    return tostring(vold)
+end
+
+--save `projtable` to a Project.lua file
+local function saverequirementlist(req, rfile, root)
+    --open Project.t and set to stdout
+    local file = io.open(root.."/"..rfile, "w")
+    io.output(file)
+    --write main project data to file
+    io.write("Require = {\n")
+    local keys = Base.getsortedkeys(req)
+    for _,key  in ipairs(keys) do
+        io.write("    [\"", key, "\"] = ")
+        Base.serialize(req[key], 2)
+    end
+    io.write("}\n")
+    io.write("return Require")
+    --close file
+    io.close(file)
+end
+
+--fetches the Require.lua file in .cosm if it exists
+--assumes root is a valid cosm package root
+local function fetchrequirmentstable(root)
+    if Cm.isfile(root.."/.cosm/Require.lua") then
+        return dofile(root.."/.cosm/Require.lua")
+    else
+        --create directory if it does not exist
+        Cm.throw{cm="mkdir -p .cosm", root=root}
+        --compute minimal requirement list without upgrades (false)
+        local req = Pkg.getminimalrequirementlist(root, false)
+        Base.mark_as_general_keys(req)
+        saverequirementlist(req, ".cosm/Require.lua", root)
+        return req
     end
 end
 
@@ -104,56 +213,106 @@ local function getrawbuildlist(root)
     --our build list
     local list = {}
     local pkg = fetchprojecttable(root)
+    --our requirment list
+    local req = fetchrequirmentstable(root)
     --loop over direct dependencies of our project
     for depname,depversion in pairs(pkg.deps) do
-        addtobuildlist(list, depname, depversion)
+        addtobuildlist(list, req, depname, depversion)
     end
     return list
 end
 
---get the maximum of all minimum requirements
-local function getbuildlist(root)
-    local list = getrawbuildlist(root)
-    for pkg, versions in pairs(list) do
-        -- --count how many versions are listed
-        -- local nv = Base.length(versions)
-        --loop over versions
-        for version, _ in pairs(versions) do
-            Semver.parse("version")
+local function mark_as_buildlist(t)
+    setmetatable(t, {__isbuildlist = true})
+end
+
+function Pkg.isbuildlist(t)
+    local mt = Base.getcustommetatable(t)
+    return mt.__isbuildlist==true
+end
+
+local function minimalversionselection(rawbuildlist)
+    for pkgid,vdata in pairs(rawbuildlist) do
+        --determine the maximum of the minimal requirements
+        local maxversion = selectmaximalversion(vdata)
+        --overwrite the raw-build list entry with maximum version of
+        --the minimum requirements and save path to the package version
+        rawbuildlist[pkgid] = vdata[maxversion]
+        Base.mark_as_simple_keys(rawbuildlist[pkgid])
+        mark_as_buildlist(rawbuildlist)
+    end
+end
+
+--determine the top-level requirment list
+local function reducerequirementlist(list)
+    local minreq = {}
+    for dep,versions in pairs(list) do
+        local implied = false
+        local v
+        for vold,vnew in pairs(versions) do
+            v = vnew
+            if vold==vnew then
+                implied = true
+                break
+            end
+        end
+        --if not implied by other packages, then add requirment
+        if not implied then
+            minreq[dep] = v
         end
     end
+    return minreq
+end
+
+--determine the top-level requirements 
+function Pkg.getminimalrequirementlist(root, latest)
+    if not Proj.ispkg(root) then
+        error("Current directory is not a valid package.")
+    end
+    --our minimal requirement list
+    local pkg = fetchprojecttable(root)
+    local list = minrequirmentslist(pkg, latest)
+    Base.serialize(list, 1)
+    --compute the top-level external requirments
+    local minreq = reducerequirementlist(list)
+    --insert direct dependencies
+    for depname,depversion in pairs(pkg.deps) do
+        local pkgid = packageid(depname, depversion)
+        if minreq[pkgid]==nil then
+            minreq[pkgid] = depversion
+        end
+    end
+    Base.serialize(minreq, 1)
+    return minreq
 end
 
 local function savebuildlist(list, root)
     --open Buildlist.lua and set to stdout
-    Cm.throw{cm="mkdir -p .cosm", root=root}
-    Cm.throw{cm="touch .cosm/Buildlist.lua", root=root}
-    local file = io.open(root.."/.cosm/Buildlist.lua", "w")
+    Cm.throw{cm="touch Buildlist.lua", root=root}
+    local file = io.open(root.."/Buildlist.lua", "w")
     io.output(file)
     --write main project data to file
     io.write("Buildlist = {\n")
-    for key, value in pairs(list) do
-        io.write("    ", key, " = ")
-        Base.serialize(value, 2)
+    --write table in sorted order
+    local keys = Base.getsortedkeys(list)
+    for _,key  in ipairs(keys) do
+        io.write("    [\"", key, "\"] = ")
+        Base.serialize(list[key], 2)
     end
     io.write("}\n")
     io.write("return Buildlist")
 end
 
-function Pkg.buildlist(root)
-    local list = getrawbuildlist(root)
-    savebuildlist(list, root)
-end
-
---assumes a valid specs-file
-local function make_available(specs)
-    local dest = Proj.terrahome.."/packages/"..specs.name.."/"..specs.sha1
-    if not Cm.isdir(dest) then
+--assumes a valid specs-entry from a build-list
+--{name=<pkgname>, version=<pkgversion>, path=<packages/...>, clone=<clones/...>}
+local function makepkgavailable(specs)
+    local dest = Proj.terrahome.."/"..specs.path
+    if not Cm.isdir(specs.path) then
         Pkg.fetch(specs) --checkout version in .cosm/clones/<uuid> or checkout from remote repo
         --leads to a detached HEAD
         --copy source to .cosm/packages
         local src = Proj.terrahome.."/clones/"..specs.uuid
-        Cm.throw{cm="mkdir -p "..Proj.terrahome.."/packages/"..specs.name}
+        Cm.throw{cm="mkdir -p "..dest}
         --copy all files and directories, except .git*
         Cm.throw{cm="rsync -av --exclude=\".git*\" "..src.."/ "..dest}
         Cm.throw{cm="git checkout -", root=src} --reset HEAD to previous
@@ -161,7 +320,94 @@ local function make_available(specs)
     end
 end
 
+function Pkg.makeavailable(buildlist)
+    if not Pkg.isbuildlist(buildlist) then
+        error("Not a valid build list.")
+    end
+    --make packages in build list available
+    for _,pkgspecs in pairs(buildlist) do
+        makepkgavailable(pkgspecs)
+    end
+end
 
+function Pkg.buildlist(root)
+    --compute raw build list
+    local list = getrawbuildlist(root)
+    --determine maximum of the minimum requirements
+    minimalversionselection(list)
+    --save build list
+    Cm.throw{cm="mkdir -p .cosm", root=root}
+    savebuildlist(list, root.."/.cosm")
+    --make packages available in the buildlist
+    -- Pkg.makeavailable(list)
+end
+
+--get latest version that is compatible with v
+--assumes input is a table loaded from a Versions.lua file
+--implicitly assumes that vmin is a listed version
+local function getlatestcompatible(versions, vmin)
+    local save = Semver.parse(vmin)
+    if save.major==0 then
+        for i,v in ipairs(versions) do
+            local current = Semver.parse(v)
+            if current.major==save.major and current.minor==save.minor and current>save then
+                save = current
+            end
+        end
+    else
+        for i,v in ipairs(versions) do
+            local current = Semver.parse(v)
+            if current.major==save.major and current>save then
+                save = current
+            end
+        end
+    end
+    return tostring(save)
+end
+
+--retreive metadata of a pkg and load the registry
+function Pkg.loadpkg(registry, pkg, latest)
+    if not type(latest)=="boolean" then
+        error("latest should be 'true' or 'false'.\n")
+    end
+    if type(pkg.version) ~= "string" then
+        error("Provide table with `version` as a string.\n\n")
+    end
+    --find package in available registries
+    local found = Reg.loadregistry(registry, pkg.name)
+    --case where pkgdep is not found in any of the registries
+    if not found then
+        error("Package "..pkg.name.." is not a registered package.\n\n")
+    end
+    --select version
+    pkg.path = registry.table.packages[pkg.name].path
+    --possibly pick the last version
+    if latest then
+        local versions = dofile(registry.path.."/"..pkg.path.."/Versions.lua")
+        pkg.version = getlatestcompatible(versions, pkg.version)
+    end
+    --sanity-check if version is present in registry
+    local versionpath = registry.path.."/"..pkg.path.."/"..pkg.version
+    if not Cm.isdir(versionpath) then
+        error("Package "..pkg.name.." is registered in "..registry.name..", but version "..pkg.version.." is lacking.\n\n")
+    end
+end
+
+-- function Pkg.upgradesingle(root, pkg)
+--     local req = Pkg.getminimalrequirementlist(root, true)
+--     Base.mark_as_general_keys(req)
+--     table.sort(req)
+--     Cm.throw{cm="mkdir -p .cosm", root=root}
+--     saverequirementlist(req, ".cosm/Require.lua", root)
+-- end
+
+function Pkg.upgradeall(root)
+    local req = Pkg.getminimalrequirementlist(root, true)
+    Base.mark_as_general_keys(req)
+    table.sort(req)
+    Cm.throw{cm="mkdir -p .cosm", root=root}
+    saverequirementlist(req, ".cosm/Require.lua", root)
+end
 
 --add a dependency to a project
 --signature Pkg.add{dep="...", version="xx.xx.xx"; root="."}
@@ -173,6 +419,8 @@ function Pkg.add(args)
         error("Provide table with `dep` (dependency) and optional `version` and `root` directory.\n\n")
     elseif type(args.dep)~="string" then
         error("Provide table with `dep` (dependency) as a string.\n\n")
+    elseif type(args.version)~="string" then
+        error("Provide table with `version` as a string.\n\n")
     end
     --set and check pkg root
     if args.root==nil then
@@ -181,41 +429,17 @@ function Pkg.add(args)
     if not Proj.ispkg(args.root) then
         error("Current directory is not a valid package.")
     end
-    --find pkg-dep and version in known registries
-    local dep = {name=args.dep}
-    local registry = {} --{name, path, table}
-    local found = Reg.loadregistry(registry, dep.name)
-    --case where pkgdep is not found in any of the registries
-    if not found then
-        error("Package "..args.dep.." is not a registered package.\n\n")
-    end
-    --select version
-    dep.path = registry.table.packages[dep.name].path
-    if args.version==nil then
-        local depversions = dofile(registry.path.."/"..dep.path.."/Versions.lua")
-        dep.version = depversions[#depversions] -- pick the last version
-    elseif type(args.version) == "string" then
-        dep.version = args.version
-    else
-        error("Provide table with `version` as a string.\n\n")
-    end
     --initialize package and dependency
     local pkg = fetchprojecttable(args.root)
     pkg.root = args.root
     --check that pkg and pkg.dep are not the same package
-    if pkg.name==dep.name then
-      error("Cannot add "..dep.name.."as a dependency to "..pkg.name..".\n\n")
+    if pkg.name==args.dep then
+      error("Cannot add "..args.dep.."as a dependency to "..pkg.name..".\n\n")
     end
-    --check if version is present in registry
-    dep.path = registry.table.packages[dep.name].path
-    local versionpath = registry.path.."/"..dep.path.."/"..dep.version
-    if not Cm.isdir(versionpath) then
-        error("Package "..dep.name.." is registered in "..registry.name..", but version "..dep.version.." is lacking.\n\n")
-    end
-    --make dependency available (fetch from remote, copy source to packages)
-    dep.specs = dofile(versionpath.."/Specs.lua")
-    make_available(dep.specs)
-
+    --find pkg-dep and version in known registries
+    local dep = {name=args.dep, version=args.version}
+    local registry = {} --{name, path, table}
+    Pkg.loadpkg(registry, dep, false)
     --add pkg.dep to the project dependencies
     pkg.deps[dep.name] = dep.version
     --save pkg table
