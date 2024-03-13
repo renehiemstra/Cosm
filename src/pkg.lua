@@ -82,7 +82,7 @@ local function packageid(pkgname, version)
     end
 end
 
-local function addtominrequirmentslist(list, pkgname, version, latest)
+local function addtominrequirmentslist(list, req, pkgname, version, latest)
     --get package identifier
     local pkgid = packageid(pkgname, version)
     --create table on first entry
@@ -90,19 +90,24 @@ local function addtominrequirmentslist(list, pkgname, version, latest)
         list[pkgid] = {}
         Base.mark_as_general_keys(list[pkgid])
     end
-    --load package from registry
-    local registry = {}
-    local pkg = {name=pkgname, version=version}
-    Pkg.loadpkg(registry, pkg, latest) --upgrade to latest=[true, false]
+    --if there is a top-level package lower bound on the version then use that one
+    if req[pkgid]~=nil then
+        version = req[pkgid]
+    end
     --add entry: 'version' -> latest compatible with 'version'
     --only do work if case is not yet treated.
     if list[pkgid][version]==nil then
+        --load package from registry
+        local registry = {}
+        local pkg = {name=pkgname, version=version}
+        Pkg.loadpkg(registry, pkg, latest) --upgrade to latest=[true, false]
+        --update requirement list
         list[pkgid][version] = pkg.version
         --get specs of this package
         local specs = loadpkgspecs(registry, pkg.name, pkg.version)
         --recursively add to minimal requirement list
         for depname,depversion in pairs(specs.deps) do
-            addtominrequirmentslist(list, depname, depversion, latest)
+            addtominrequirmentslist(list, req, depname, depversion, latest)
         end
     end
 end
@@ -110,12 +115,13 @@ end
 --compute the minimum requirement list
 --<pkg : table> contains the specs of the top-level package
 --<latest : boolean> signals that latest versions are used
-local function minrequirmentslist(pkg, latest)
+local function minrequirmentslist(pkg, req, latest)
     --our minimal requirement list
     local list = {}
     --loop over direct dependencies of our project
+    Base.serialize(pkg.deps, 1)
     for depname,depversion in pairs(pkg.deps) do
-        addtominrequirmentslist(list, depname, depversion, latest)
+        addtominrequirmentslist(list, req, depname, depversion, latest)
     end
     return list
 end
@@ -196,7 +202,8 @@ local function fetchrequirmentstable(root)
         --create directory if it does not exist
         Cm.throw{cm="mkdir -p .cosm", root=root}
         --compute minimal requirement list without upgrades (false)
-        local req = Pkg.getminimalrequirementlist(root, false)
+        local pkg = fetchprojecttable(root)
+        local req = Pkg.getminimalrequirementlist(pkg, {}, false)
         Base.mark_as_general_keys(req)
         saverequirementlist(req, ".cosm/Require.lua", root)
         return req
@@ -265,14 +272,8 @@ local function reducerequirementlist(list)
 end
 
 --determine the top-level requirements 
-function Pkg.getminimalrequirementlist(root, latest)
-    if not Proj.ispkg(root) then
-        error("Current directory is not a valid package.")
-    end
-    --our minimal requirement list
-    local pkg = fetchprojecttable(root)
-    local list = minrequirmentslist(pkg, latest)
-    Base.serialize(list, 1)
+function Pkg.getminimalrequirementlist(pkg, req, latest)
+    local list = minrequirmentslist(pkg, req, latest)
     --compute the top-level external requirments
     local minreq = reducerequirementlist(list)
     --insert direct dependencies
@@ -282,7 +283,6 @@ function Pkg.getminimalrequirementlist(root, latest)
             minreq[pkgid] = depversion
         end
     end
-    Base.serialize(minreq, 1)
     return minreq
 end
 
@@ -393,20 +393,18 @@ function Pkg.loadpkg(registry, pkg, latest)
     end
 end
 
--- function Pkg.upgradesingle(root, pkg)
---     local req = Pkg.getminimalrequirementlist(root, true)
---     Base.mark_as_general_keys(req)
---     table.sort(req)
---     Cm.throw{cm="mkdir -p .cosm", root=root}
---     saverequirementlist(req, ".cosm/Require.lua", root)
--- end
-
 function Pkg.upgradeall(root)
-    local req = Pkg.getminimalrequirementlist(root, true)
-    Base.mark_as_general_keys(req)
-    table.sort(req)
+    if not Proj.ispkg(root) then
+        error("Current directory is not a valid package.")
+    end
+    --our minimal requirement list
+    local pkg = fetchprojecttable(root)
+    local req = fetchrequirmentstable(root)
+    local minreq = Pkg.getminimalrequirementlist(pkg, req, true)
+    Base.mark_as_general_keys(minreq)
+    table.sort(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root}
-    saverequirementlist(req, ".cosm/Require.lua", root)
+    saverequirementlist(minreq, ".cosm/Require.lua", root)
 end
 
 --add a dependency to a project
