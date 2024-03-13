@@ -20,13 +20,13 @@ remote_add(){
     pkg=$1
     mkdir -p $DEPOT_PATH/localhub/$pkg
     cd $DEPOT_PATH/localhub/$pkg
-    git init --bare
+    git init --bare > /dev/null
     # add remote to project
     cd "$DEPOT_PATH/dev/$pkg"
-    git remote add origin $DEPOT_PATH/localhub/$pkg
-    git add .
-    git commit -m "<dep> added dependencies"
-    git push --set-upstream origin main
+    git remote add origin $DEPOT_PATH/localhub/$pkg > /dev/null
+    git add . > /dev/null
+    git commit -m "<dep> added dependencies" > /dev/null
+    git push --set-upstream origin main > /dev/null
     cd "$cwd"
 }
 
@@ -34,10 +34,10 @@ add_commit_push(){
     cwd=$PWD
     pkg=$1
     cd "$DEPOT_PATH/dev/$pkg"
-    git add .
-    git commit -m "<wip>"
-    git pull
-    git push
+    git add . > /dev/null
+    git commit -m "<wip>" > /dev/null
+    git pull > /dev/null
+    git push > /dev/null
     cd "$cwd"
 }
 
@@ -49,19 +49,19 @@ runall(){
     # create local registry
     mkdir -p $DEPOT_PATH/localhub/TestRegistry
     cd $DEPOT_PATH/localhub/TestRegistry
-    git init --bare
+    git init --bare > /dev/null
     cosm registry init TestRegistry $DEPOT_PATH/localhub/TestRegistry
 
     # root folder in which to create packages
     cd $DEPOT_PATH/dev
 
     # create packages
-    cosm init A lua/PkgTemplate
-    cosm init B lua/PkgTemplate
-    cosm init C lua/PkgTemplate
-    cosm init D lua/PkgTemplate
-    cosm init E lua/PkgTemplate
-    cosm init F lua/PkgTemplate
+    cosm init A --template lua/PkgTemplate
+    cosm init B --template lua/PkgTemplate
+    cosm init C --template lua/PkgTemplate
+    cosm init D --template lua/PkgTemplate
+    cosm init E --template lua/PkgTemplate
+    cosm init F --template lua/PkgTemplate
 
     # releases of E
     cd $DEPOT_PATH/dev/E

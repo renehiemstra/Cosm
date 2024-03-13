@@ -197,15 +197,19 @@ function Reg.create(registry)
   registry.description = "Cosm local package registry"
   registry.packages = {}
   --clone repo
+  print("Before git clone")
   Cm.throw{cm="git clone "..registry.url.." "..registry.name, root=Reg.regdir}
+  print("After git clone")
   --generate .ignore file
   Git.ignore(registry.path, {})
   --generate Registry.lua file
   Reg.save(registry, "Registry.lua", registry.path)
+  print("Before git add/commit/push")
   --create git repo and push to origin\
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m \"Initialized new registry.\"", root=registry.path}
   Cm.throw{cm="git push", root=registry.path}
+  print("After git add/commit/push")
   --add name of registry to the list of registries
   Reg.addtolist(registry.name)
 end

@@ -30,7 +30,11 @@ cosm registry status <registry name>    (implemented)
 
 ## instantiate a new package
 ```
-cosm init <package name> <language/template>                        (implemented)
+cosm init <package name>                                    (implemented)
+```
+Evaluate in root directory of an existing project. A 'Project.lua' file is created for project <package name>.
+```
+cosm init <package name> --template <language/template>     (implemented)
 ```
 *Evaluate in parent folder of a new package. Adds a new package with name <package name> according to a template (in .cosm/lang). Currently, only a lua and terra template are implemented.*
 

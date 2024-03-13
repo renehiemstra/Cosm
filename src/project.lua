@@ -150,7 +150,7 @@ end
 --generate Package.lua
 local function genprojfile(pkgname, root)
   local pkguuid = Proj.uuid()
-  local file = io.open(root.."/"..pkgname.."/Project.lua", "w")
+  local file = io.open(root.."/Project.lua", "w")
   file:write("Project = {\n")
   file:write("    name = \""..pkgname.."\",\n")
   file:write("    uuid = \""..pkguuid.."\",\n")
@@ -163,12 +163,18 @@ local function genprojfile(pkgname, root)
 end
 
 --create a terra pkg template
-function Proj.create(template, pkgname, root)
-  --create a project from a template
-  print("going to copy from pkg template")
-  Lang.project_from_template(template, pkgname, root)
+function Proj.create(pkgname, root)
   --crete Project.lua file
   genprojfile(pkgname, root)
+  print("Created Project.lua file")
+end
+
+--create a terra pkg template
+function Proj.createfromtemplate(template, pkgname, root)
+  --create a project from a template
+  Lang.project_from_template(template, pkgname, root)
+  --crete Project.lua file
+  genprojfile(pkgname, root.."/"..pkgname)
   --initialize a git version control and commit initial project
   local commitmessage = "\"<new package> "..pkgname.."\""
   Cm.throw{cm="git init", root=root.."/"..pkgname}

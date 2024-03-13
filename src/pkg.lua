@@ -61,7 +61,6 @@ end
 --assumes registry is initialized via Reg.loadregistry(...)
 local function loadpkgspecs(registry, pkgname, pkgversion)
     local versionpath = registry.path.."/"..registry.table.packages[pkgname].path.."/"..pkgversion
-    print(versionpath)
     if not Cm.isdir(versionpath) then
         error("Package "..pkgname.." is registered in "..registry.name..", but version "..pkgversion.." is lacking.\n\n")
     end
@@ -82,7 +81,7 @@ local function packageid(pkgname, version)
     end
 end
 
-local function addtominrequirmentslist(list, req, pkgname, version, latest)
+local function addtominrequirmentslist(list, pkgname, version, upgrades, latest)
     --get package identifier
     local pkgid = packageid(pkgname, version)
     --create table on first entry
@@ -90,24 +89,24 @@ local function addtominrequirmentslist(list, req, pkgname, version, latest)
         list[pkgid] = {}
         Base.mark_as_general_keys(list[pkgid])
     end
-    --if there is a top-level package lower bound on the version then use that one
-    if req[pkgid]~=nil then
-        version = req[pkgid]
-    end
     --add entry: 'version' -> latest compatible with 'version'
     --only do work if case is not yet treated.
     if list[pkgid][version]==nil then
         --load package from registry
         local registry = {}
         local pkg = {name=pkgname, version=version}
-        Pkg.loadpkg(registry, pkg, latest) --upgrade to latest=[true, false]
+        if latest==true then
+            Pkg.loadpkg(registry, pkg, true) --upgrade to latest=[true, false]
+        else
+            Pkg.loadpkg(registry, pkg, upgrades[pkgid]==true) --upgrade to latest=[true, false]
+        end
         --update requirement list
         list[pkgid][version] = pkg.version
         --get specs of this package
         local specs = loadpkgspecs(registry, pkg.name, pkg.version)
         --recursively add to minimal requirement list
         for depname,depversion in pairs(specs.deps) do
-            addtominrequirmentslist(list, req, depname, depversion, latest)
+            addtominrequirmentslist(list, depname, depversion, upgrades, latest)
         end
     end
 end
@@ -115,13 +114,12 @@ end
 --compute the minimum requirement list
 --<pkg : table> contains the specs of the top-level package
 --<latest : boolean> signals that latest versions are used
-local function minrequirmentslist(pkg, req, latest)
+local function minrequirmentslist(pkg, upgrades, latest)
     --our minimal requirement list
     local list = {}
     --loop over direct dependencies of our project
-    Base.serialize(pkg.deps, 1)
     for depname,depversion in pairs(pkg.deps) do
-        addtominrequirmentslist(list, req, depname, depversion, latest)
+        addtominrequirmentslist(list, depname, depversion, upgrades, latest)
     end
     return list
 end
@@ -149,12 +147,12 @@ local function addtobuildlist(list, req, pkgname, version)
         local specs = loadpkgspecs(registry, pkg.name, pkg.version)
         --add to build list
         list[pkgid][version] = {
-            -- name=specs.name,
+            name=specs.name,
             version=specs.version,
-            -- path="packages/"..specs.name.."/"..specs.sha1,
-            -- uuid=specs.uuid,
-            -- sha1=specs.sha1,
-            -- url=specs.url
+            path="packages/"..specs.name.."/"..specs.sha1,
+            uuid=specs.uuid,
+            sha1=specs.sha1,
+            url=specs.url
         }
         --recursively add dependencies to buildlist
         for depname,depversion in pairs(specs.deps) do
@@ -203,7 +201,7 @@ local function fetchrequirmentstable(root)
         Cm.throw{cm="mkdir -p .cosm", root=root}
         --compute minimal requirement list without upgrades (false)
         local pkg = fetchprojecttable(root)
-        local req = Pkg.getminimalrequirementlist(pkg, {}, false)
+        local req = Pkg.getminimalrequirementlist(pkg, {})
         Base.mark_as_general_keys(req)
         saverequirementlist(req, ".cosm/Require.lua", root)
         return req
@@ -251,7 +249,7 @@ local function minimalversionselection(rawbuildlist)
 end
 
 --determine the top-level requirment list
-local function reducerequirementlist(list)
+local function reducerequirementlist(list, constraints)
     local minreq = {}
     for dep,versions in pairs(list) do
         local implied = false
@@ -266,16 +264,28 @@ local function reducerequirementlist(list)
         --if not implied by other packages, then add requirment
         if not implied then
             minreq[dep] = v
+        else
+            if type(constraints[dep])=="string" then
+                --if implied version is lower than the one in the current build  
+                --list, then add requirement
+                local vn = Semver.parse(v)
+                local vc = Semver.parse(constraints[dep])
+                --we don't want an upgrade of one package to cause a downgrade 
+                --of another package
+                if vn < vc then
+                    minreq[dep] = constraints[dep]
+                end
+            end
         end
     end
     return minreq
 end
 
 --determine the top-level requirements 
-function Pkg.getminimalrequirementlist(pkg, req, latest)
-    local list = minrequirmentslist(pkg, req, latest)
+function Pkg.getminimalrequirementlist(pkg, constraints, latest)
+    local list = minrequirmentslist(pkg, constraints, latest)
     --compute the top-level external requirments
-    local minreq = reducerequirementlist(list)
+    local minreq = reducerequirementlist(list, constraints)
     --insert direct dependencies
     for depname,depversion in pairs(pkg.deps) do
         local pkgid = packageid(depname, depversion)
@@ -367,9 +377,9 @@ end
 
 --retreive metadata of a pkg and load the registry
 function Pkg.loadpkg(registry, pkg, latest)
-    if not type(latest)=="boolean" then
-        error("latest should be 'true' or 'false'.\n")
-    end
+    -- if not type(upgrades)=="boolean" then
+    --     error("latest should be 'true' or 'false'.\n")
+    -- end
     if type(pkg.version) ~= "string" then
         error("Provide table with `version` as a string.\n\n")
     end
@@ -393,19 +403,56 @@ function Pkg.loadpkg(registry, pkg, latest)
     end
 end
 
+--fetch buildlist, if it exists
+local function fetchbuildlist(root)
+    local buildlist = {}
+    if Cm.isfile(root.."/.cosm/Buildlist.lua") then
+        buildlist = dofile(root.."/.cosm/Buildlist.lua")
+    end
+    return buildlist
+end
+
+--fetch a simplified version of the buildlist, if it exists
+local function fetchsimplebuildlist(root)
+    local buildlist = fetchbuildlist(root)
+    local simplebuildlist = {}
+    for key, t in pairs(buildlist) do
+        simplebuildlist[key] = t.version
+    end
+    return simplebuildlist
+end
+
 function Pkg.upgradeall(root)
     if not Proj.ispkg(root) then
         error("Current directory is not a valid package.")
     end
     --our minimal requirement list
     local pkg = fetchprojecttable(root)
-    local req = fetchrequirmentstable(root)
-    local minreq = Pkg.getminimalrequirementlist(pkg, req, true)
+    local minreq = Pkg.getminimalrequirementlist(pkg, {}, true) --upgrade all = true
     Base.mark_as_general_keys(minreq)
     table.sort(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root}
     saverequirementlist(minreq, ".cosm/Require.lua", root)
 end
+
+--upgrades a selection of packages only
+--upgrades = {<pkgid> = true, ...}
+function Pkg.upgradeselection(root)
+    if not Proj.ispkg(root) then
+        error("Current directory is not a valid package.")
+    end
+    --fetch a simplified representation of the previous build list
+    local constraints = fetchsimplebuildlist(root)
+    constraints["C@v1"] = true -- allow "C@v1" to upgrade
+    --our minimal requirement list
+    local pkg = fetchprojecttable(root)
+    local minreq = Pkg.getminimalrequirementlist(pkg, constraints, false) --upgrade all = false
+    Base.mark_as_general_keys(minreq)
+    table.sort(minreq)
+    Cm.throw{cm="mkdir -p .cosm", root=root}
+    saverequirementlist(minreq, ".cosm/Require.lua", root)
+end
+
 
 --add a dependency to a project
 --signature Pkg.add{dep="...", version="xx.xx.xx"; root="."}

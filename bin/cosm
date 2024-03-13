@@ -19,13 +19,8 @@ status(){
 }
 
 init(){
-    if [ "$#" -eq 2 ]; then
-        checkname $1
-        lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
-    else
-        printf "ArgumentError: the signature is 'cosm init <package name> <template path>'. See 'cosm --help'. \n \n"
-        exit 1
-    fi
+    checkname $1
+    lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
 }
 
 add(){
@@ -248,7 +243,11 @@ case "$1" in
         ;;
 
     upgrade-all)
-        lua $COSM_DIR/cli/cmd-minrequirements.lua $PWD "${@:2}"
+        lua $COSM_DIR/cli/cmd-upgrade-all.lua $PWD "${@:2}"
+        ;;
+
+    upgrade-some)
+        lua $COSM_DIR/cli/cmd-upgrade-selection.lua $PWD "${@:2}"
         ;;
         
     *) # default
