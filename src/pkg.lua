@@ -456,16 +456,20 @@ end
 
 local function addconstraint(constraints, depname, version)
     local depid
+    local count = 0
     for id,_ in pairs(constraints) do
+        count = count + 1
         if depname==pkgnamefromid(id) then
             depid = id
             break
         end
     end
-    if depid~=nil then
-        constraints[depid] = version
-    else
-        error("Package "..depname.." is not listed as a direct or transitive dependency.")
+    if count~=nil then
+        if depid~=nil then
+            constraints[depid] = version
+        else
+            error("Package "..depname.." is not listed as a direct or transitive dependency.")
+        end
     end
     return constraints
 end
@@ -483,16 +487,26 @@ function Pkg.upgradesinglepkg(root, depname, depversion)
     end
     --check versions and update the project table
     local pkg = fetchprojecttable(root)
-    if not (pkg.deps[depname]==nil or depversion=="latest") then
-        local vold = Semver.parse(pkg.deps[depname])
-        local vnew = Semver.parse(depversion)
-        if vold==vnew then
-            error("Cannot upgrade: version already listed as a dependency.")
-        elseif vold>vnew then
-            error("Cannot upgrade: version is older than the one installed.")
+    local dep = {name=depname, version=pkg.deps[depname]}
+    local registry = {}
+    --in the case of a direct dependency, update Project.lua file
+    if dep.version~=nil then
+        --special case when checking out the latest version
+        if depversion=="latest" then
+            Pkg.loadpkg(registry, dep, true) --load new version into dep.version
+        else
+            local vold = Semver.parse(dep.version) --parse old version
+            local vnew = Semver.parse(depversion)  --parse new version
+            if vold==vnew then
+                error("Cannot upgrade: version already listed as a dependency.")
+            elseif vold>vnew then
+                error("Cannot upgrade: version is older than the one installed.")
+            end
+            dep.version = depversion --set new version    
+            Pkg.loadpkg(registry, dep, false) --load new version to see if it exists
         end
         --update version on Project.lua table
-        pkg.deps[depname] = depversion
+        pkg.deps[depname] = dep.version
         Proj.save(pkg, "Project.lua", root)
     end
     --fetch a simplified representation of the previous build list
