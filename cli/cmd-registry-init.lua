@@ -10,7 +10,7 @@ local function abort(message)
 end
 
 local function printstats(name, root)
-    print("Created registry "..name.." in "..root)
+    print("Created registry "..name.." in "..root..".")
 end
 
 --extract command line arguments

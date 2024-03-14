@@ -9,7 +9,7 @@ local function abort()
 end
 
 local function printstats(name, version)
-    print("Added package "..name.." v"..version.." as a dependency")
+    print("Added package "..name.." v"..version.." as a dependency.")
 end
 
 --extract command line arguments

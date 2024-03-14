@@ -4,12 +4,12 @@ local Pkg = require("src.pkg")
 local Cm = require("src.command")
 
 local function abort()
-    print("Invalid option arguments: use `cosm release [v<version>,--patch,--minor,--major]")
+    print("Invalid option arguments: use `cosm release [v<version>,--patch,--minor,--major].")
     os.exit(1)
 end
 
 local function printstats(pkg)
-    print("Released "..pkg.name.." v"..pkg.version..".\n")
+    print("Released "..pkg.name.." v"..pkg.version..".")
 end
 
 --extract command line arguments

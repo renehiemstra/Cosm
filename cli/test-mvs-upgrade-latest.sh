@@ -145,6 +145,7 @@ runall(){
     add_commit_push A
     cosm add B v1.2.0
     cosm add C v1.2.0
+    cosm upgrade --latest
 }
 
 cleanall(){

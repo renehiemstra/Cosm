@@ -9,7 +9,7 @@ local function abort()
 end
 
 local function printstats(pkgname, root)
-    print("Created package "..pkgname.." in "..root)
+    print("Created package "..pkgname.." in "..root..".")
 end
 
 --extract command line arguments

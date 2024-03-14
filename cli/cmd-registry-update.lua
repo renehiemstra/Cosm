@@ -13,14 +13,14 @@ if nargs==1 then
     local reg = arg[1]
     print("registry: "..reg)
     Reg.synchronize(reg)
-    print("Updated registry "..reg.." in "..Reg.regdir.."/"..reg..".\n")
+    print("Updated registry "..reg.." in "..Reg.regdir.."/"..reg..".")
 elseif nargs==0 then
     local registries = dofile(Reg.regdir.."/List.lua")
     for i,reg in pairs(registries) do
         print("registry: "..reg)
         Reg.synchronize(reg)
     end
-    print("Updated all registries in "..Reg.regdir..".\n")
+    print("Updated all registries in "..Reg.regdir..".")
 else
     abort("Invalid arguments: try signature: cosm registry update [--all, <registry name>].\n")
 end

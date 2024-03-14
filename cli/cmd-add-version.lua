@@ -8,12 +8,16 @@ local function abort()
 end
 
 local function printstats(name, version)
-    print("Added package "..name.." v"..version.." as a dependency")
+    print("Added package "..name.." v"..version.." as a dependency.")
 end
 
 --extract command line arguments
 local nargs = #arg
-if nargs==3 then
+if nargs==2 then
+    local args = {root = arg[1], dep = arg[2]}
+    Pkg.add(args)
+    printstats(args.dep, "-latest")
+elseif nargs==3 then
     local args = {root = arg[1], dep = arg[2], version = arg[3]}
     Pkg.add(args)
     printstats(args.dep, args.version)

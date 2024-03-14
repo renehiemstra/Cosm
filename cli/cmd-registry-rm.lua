@@ -15,14 +15,14 @@ if nargs==2 or nargs==3 then
     -- registry to operate on
     local registry = {name=arg[1]}
     if not Reg.islisted(registry.name) then
-        abort("Invalid arguments: not a valid registry.")
+        abort("Invalid arguments: not a valid registry.\n")
     end
     --package (version) to be removed
     local pkg = {name=arg[2]}
     if nargs==2 then
         --remove package entirely
         Reg.rmpkg(registry, pkg)
-        print("Removed package "..pkg.name.." from "..registry.name..".\n")
+        print("Removed package "..pkg.name.." from "..registry.name..".")
     else
         --remove package version
         local v = string.sub(arg[3],1,1)
@@ -30,7 +30,7 @@ if nargs==2 or nargs==3 then
             pkg.version = string.sub(arg[3],2,-1)
             print("pkg version is "..pkg.version)
             Reg.rmpkgversion(registry, pkg)
-            print("Removed package "..pkg.name.." v"..pkg.version.." from "..registry.name..".\n")
+            print("Removed package "..pkg.name.." v"..pkg.version.." from "..registry.name..".")
         else
             abort("Invalid arguments: version number should have the form 'v<version>'.\n")
         end

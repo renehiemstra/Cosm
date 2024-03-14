@@ -8,7 +8,7 @@ local function abort()
 end
 
 local function printstats(name, root)
-    print("Removed registry "..name.." in "..root..".\n")
+    print("Removed registry "..name.." in "..root..".")
 end
 
 --extract command line arguments

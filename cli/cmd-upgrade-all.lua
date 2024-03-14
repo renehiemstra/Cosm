@@ -3,7 +3,7 @@ package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 local Pkg = require("src.pkg")
 
 local function abort()
-    print("Invalid option arguments: use 'cosm upgrade-all'")
+    print("Invalid option arguments: use 'cosm upgrade-all'.\n")
     os.exit()
 end
 
@@ -15,8 +15,8 @@ end
 local nargs = #arg
 if nargs==1 then
     local root = arg[1]
-    --write build list to file
-    Pkg.upgradeall(root)
+    Pkg.upgradeall(root) --upgrade all direct/transitive packages
+    Pkg.buildlist(root) --write build list to file
     printstats(root)
 else
     abort()

@@ -179,7 +179,7 @@ local function saverequirementlist(req, rfile, root)
     local file = io.open(root.."/"..rfile, "w")
     io.output(file)
     --write main project data to file
-    io.write("Require = {\n")
+    io.write("local Require = {\n")
     local keys = Base.getsortedkeys(req)
     for _,key  in ipairs(keys) do
         io.write("    [\"", key, "\"] = ")
@@ -193,18 +193,21 @@ end
 
 --fetches the Require.lua file in .cosm if it exists
 --assumes root is a valid cosm package root
-local function fetchrequirmentstable(root)
-    if Cm.isfile(root.."/.cosm/Require.lua") then
-        return dofile(root.."/.cosm/Require.lua")
-    else
+local function fetchrequirmentstable(root, recompute)
+    if recompute==true then
         --create directory if it does not exist
         Cm.throw{cm="mkdir -p .cosm", root=root}
         --compute minimal requirement list without upgrades (false)
         local pkg = fetchprojecttable(root)
-        local req = Pkg.getminimalrequirementlist(pkg, {})
+        local req = Pkg.getminimalrequirementlist(pkg, {}, false)
         Base.mark_as_general_keys(req)
         saverequirementlist(req, ".cosm/Require.lua", root)
         return req
+    end
+    if Cm.isfile(root.."/.cosm/Require.lua") then
+        return dofile(root.."/.cosm/Require.lua")
+    else
+        error("File '"..root.."/.cosm/Require.lua' does not exist.\n")
     end
 end
 
@@ -219,7 +222,7 @@ local function getrawbuildlist(root)
     local list = {}
     local pkg = fetchprojecttable(root)
     --our requirment list
-    local req = fetchrequirmentstable(root)
+    local req = fetchrequirmentstable(root, true) --always recompute
     --loop over direct dependencies of our project
     for depname,depversion in pairs(pkg.deps) do
         addtobuildlist(list, req, depname, depversion)
@@ -302,7 +305,7 @@ local function savebuildlist(list, root)
     local file = io.open(root.."/Buildlist.lua", "w")
     io.output(file)
     --write main project data to file
-    io.write("Buildlist = {\n")
+    io.write("local Buildlist = {\n")
     --write table in sorted order
     local keys = Base.getsortedkeys(list)
     for _,key  in ipairs(keys) do
@@ -435,24 +438,66 @@ function Pkg.upgradeall(root)
     saverequirementlist(minreq, ".cosm/Require.lua", root)
 end
 
+local function pkgnamefromid(id)
+    local a,b = id:match("(.+)@(.+)")
+    return a
+end
+
+local function pkgmajorversionfromid(id)
+    local a,b = id:match("(.+)@(.+)")
+    return b
+end
+
 --upgrades a selection of packages only
 --upgrades = {<pkgid> = true, ...}
-function Pkg.upgradeselection(root)
+function Pkg.upgradesingle(root, depname, version)
+    --check arguments
+    if type(depname)~="string" then
+        error("Provide dependency name as a string.\n")
+    end
+    local dep = {name=depname, version=version}
+    -- if type(version)~="string" or type(version)~="boolean" then
+    --     error("Version number should be a string or a boolean.")
+    -- end
     if not Proj.ispkg(root) then
         error("Current directory is not a valid package.")
     end
     --fetch a simplified representation of the previous build list
     local constraints = fetchsimplebuildlist(root)
-    constraints["C@v1"] = true -- allow "C@v1" to upgrade
+    --set 'version' as constraint
+    local depid
+    for id,_ in pairs(constraints) do
+        if depname==pkgnamefromid(id) then
+            depid = id
+            break
+        end
+    end
+    if depid~=nil then
+        constraints[depid] = version
+    else
+        error("Package "..depname.." is not listed as a direct or transitive dependency.")
+    end
     --our minimal requirement list
     local pkg = fetchprojecttable(root)
+    --in case of a direct dependency
+    if pkg.deps[depname]~=nil then
+        local vold = Semver.parse(pkg.deps[dep.name])
+        local vnew = Semver.parse(version)
+        if vold==vnew then
+            error("Cannot upgrade: version already listed as a dependency.")
+        elseif vold>vnew then
+            error("Cannot upgrade: version is older than the one installed.")
+        end
+        --update version on Project.lua table
+        pkg.deps[depname] = version
+        Proj.save(pkg, "Project.lua", root)
+    end
     local minreq = Pkg.getminimalrequirementlist(pkg, constraints, false) --upgrade all = false
     Base.mark_as_general_keys(minreq)
     table.sort(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root}
     saverequirementlist(minreq, ".cosm/Require.lua", root)
 end
-
 
 --add a dependency to a project
 --signature Pkg.add{dep="...", version="xx.xx.xx"; root="."}
@@ -484,11 +529,13 @@ function Pkg.add(args)
     --find pkg-dep and version in known registries
     local dep = {name=args.dep, version=args.version}
     local registry = {} --{name, path, table}
-    Pkg.loadpkg(registry, dep, false)
+    Pkg.loadpkg(registry, dep, false) --false -> no upgrade
     --add pkg.dep to the project dependencies
     pkg.deps[dep.name] = dep.version
     --save pkg table
     Proj.save(pkg, "Project.lua", pkg.root)
+    --create the updated buildlist
+    Pkg.buildlist(pkg.root)
 end
 
 --remove a project dependency
@@ -521,6 +568,8 @@ function Pkg.rm(args)
     pkg.deps[dep.name] = nil
     --save pkg table
     Proj.save(pkg,"Project.lua", pkg.root)
+    --create the updated buildlist
+    Pkg.buildlist(pkg.root)
 end
 
 --upgrade a package to a higher version

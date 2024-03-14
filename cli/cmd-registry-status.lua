@@ -3,7 +3,7 @@ package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 local Reg = require("src.registry")
 
 local function abort()
-    print("Invalid option arguments: use `cosm registry status <registry name>`")
+    print("Invalid option arguments: use `cosm registry status <registry name>`.")
     os.exit(1)
 end
 

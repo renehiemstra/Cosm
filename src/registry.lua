@@ -157,7 +157,7 @@ function Reg.save(regtable, regfile, root)
   io.output(file)
 
   --write main project data to file
-  io.write("Registry = {\n")
+  io.write("local Registry = {\n")
   io.write(string.format("    name = %q,\n", regtable.name))
   io.write(string.format("    uuid = %q,\n", regtable.uuid))
   io.write(string.format("    url  = %q,\n", regtable.url))
@@ -197,19 +197,15 @@ function Reg.create(registry)
   registry.description = "Cosm local package registry"
   registry.packages = {}
   --clone repo
-  print("Before git clone")
   Cm.throw{cm="git clone "..registry.url.." "..registry.name, root=Reg.regdir}
-  print("After git clone")
   --generate .ignore file
   Git.ignore(registry.path, {})
   --generate Registry.lua file
   Reg.save(registry, "Registry.lua", registry.path)
-  print("Before git add/commit/push")
   --create git repo and push to origin\
   Cm.throw{cm="git add .", root=registry.path}
   Cm.throw{cm="git commit -m \"Initialized new registry.\"", root=registry.path}
   Cm.throw{cm="git push", root=registry.path}
-  print("After git add/commit/push")
   --add name of registry to the list of registries
   Reg.addtolist(registry.name)
 end
@@ -244,7 +240,7 @@ local function initpkgspecs(reg, pkg)
   --write Versions.lua
   local file = io.open(root.."/Versions.lua", "w")
   io.output(file)
-  io.write("Versions = {\n")
+  io.write("local Versions = {\n")
   for _,v in ipairs(versions) do
     io.write(string.format("    %q,\n", v))
   end
@@ -259,7 +255,7 @@ local function initpkgspecs(reg, pkg)
   file = io.open(root.."/"..pkg.version.."/Specs.lua", "w")
   io.output(file)
   --write main project data to file
-  io.write("Project = {\n")
+  io.write("local Project = {\n")
   io.write(string.format("    name = %q,\n", pkg.name))
   io.write(string.format("    uuid = %q,\n", pkg.uuid))
   io.write(string.format("    version = %q,\n", pkg.version))
@@ -459,76 +455,5 @@ function Reg.register(args)
   Cm.throw{cm="git pull", root=registry.path}
   Cm.throw{cm="git push", root=registry.path}
 end
-
---register a package to a registry
---signature Reg.register{reg=..., pkg=..., version=...}
--- function Reg.deregister(args)
--- end
-
--- --release a new pkg version to the registry
--- --signature: Reg.release{release=...("patch", "minor","major", or a version number)}
--- function Reg.release(pkgrelease)
---   -- --check keyword argument `release`
---   -- if not ((pkgrelease=="patch") or (pkgrelease=="minor") or (pkgrelease=="major")) then
---   --   error("Provide `release` equal to \"patch\", \"minor\", or \"major\".\n\n")
---   -- end
---   --check if current directory is a valid package
---   if not Proj.ispkg(".") then
---     error("Current directory does not follow the specifications of a cosm pkg.\n")
---   end
---   --check if all work is added and committed
---   if not Git.nodiff(".") or not Git.nodiffstaged(".") then
---     error("Git repository has changes that are unstaged or uncommited. First stage and commit your work. Then release your package.\n")
---   end
---   --initialize package
---   local pkg = dofile("Project.lua")
---   pkg.dir = "."
---   --initialize registry
---   local registry = {}
---   if not Reg.loadregistry(registry, pkg.name) then
---     error("Package "..pkg.name.." is not registered in any of the listed registries.")
---   end
---   --increase package version
---   local oldversion = Semver.parse(pkg.version)
---   local version
---   if pkgrelease=="patch" then
---     version = oldversion:nextPatch()
---   elseif pkgrelease=="minor" then
---     version = oldversion:nextMinor()
---   elseif pkgrelease=="major" then
---     version = oldversion:nextMajor()
---   else
---     version = Semver.parse(pkgrelease)
---     if version <= oldversion then
---       error("New version is older than old version.")
---     end
---   end
---   pkg.version = tostring(version)
---   pkg.url = Git.remotegeturl(".")
---   pkg.registry = registry.name
---   Proj.save(pkg, "Project.lua", ".")
-
---   --create pkg specs-list
---   local commitmessage = "\"<release> "..pkg.name.."..v"..pkg.version.."\""
---   Cm.throw{cm="git add .", root="."}
---   Cm.throw{cm="git commit -m "..commitmessage, root="."}
---   Cm.throw{cm="git push", root="."}
---   Cm.throw{cm="git tag v"..pkg.version, root="."}
---   Cm.throw{cm="git push origin v"..pkg.version, root="."}
---   pkg.sha1 = Git.hash(pkg.dir)
-
---   --get specs and update them
---   local specs = registry.table.packages[pkg.name]
---   pkg.specpath = specs.path
---   initpkgspecs(registry, pkg)
-
---   --update registry remote git repository
---   Cm.throw{cm="git add .", root=registry.path}
---   Cm.throw{cm="git commit -m "..commitmessage, root=registry.path}
---   Cm.throw{cm="git pull", root=registry.path}
---   Cm.throw{cm="git push", root=registry.path}
-
---   return pkg --return all updated pkg info
--- end
 
 return Reg
