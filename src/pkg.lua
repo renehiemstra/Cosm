@@ -435,8 +435,18 @@ function Pkg.upgradeall(root)
     if not Proj.ispkg(root) then
         error("Current directory is not a valid package.")
     end
-    --our minimal requirement list
+    --check versions and update the project table
     local pkg = fetchprojecttable(root)
+    --loop over direct dependencies and update Project.lua
+    for d,v in pairs(pkg.deps) do
+        local registry = {}
+        local dep = {name=d, version=v}
+        Pkg.loadpkg(registry, dep, true) --load new version into dep.version
+        pkg.deps[d] = dep.version
+    end
+    Base.mark_as_simple_keys(pkg.deps)
+    Proj.save(pkg, "Project.lua", root)
+    --compute minimal requirements and save
     local minreq = Pkg.getminimalrequirementlist(pkg, {}, true) --upgrade all = true
     Base.mark_as_general_keys(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root}
@@ -508,6 +518,7 @@ function Pkg.upgradesinglepkg(root, depname, depversion)
         end
         --update version on Project.lua table
         pkg.deps[depname] = dep.version
+        Base.mark_as_simple_keys(pkg.deps)
         Proj.save(pkg, "Project.lua", root)
     end
     --fetch a simplified representation of the previous build list
@@ -522,6 +533,10 @@ function Pkg.upgradesinglepkg(root, depname, depversion)
     saverequirementlist(minreq, ".cosm/Require.lua", root)
     --compute induced build list (without recomputing minimal requirment list)
     Pkg.buildlist(root, false)
+    --extract the version number for a transitive dependency
+    if dep.version==nil then
+    end
+
     return dep.version
 end
 
