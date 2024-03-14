@@ -522,6 +522,7 @@ function Pkg.upgradesinglepkg(root, depname, depversion)
     saverequirementlist(minreq, ".cosm/Require.lua", root)
     --compute induced build list (without recomputing minimal requirment list)
     Pkg.buildlist(root, false)
+    return dep.version
 end
 
 --add a dependency to a project
