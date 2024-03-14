@@ -51,9 +51,9 @@ upgrade(){
     elif [ "$#" -eq 2 ]; then
         checkname $1
         if [ "${2}" == "--latest" ]; then
-            lua $COSM_DIR/cli/cmd-upgrade-selection.lua $PWD "${1}"
+            lua $COSM_DIR/cli/cmd-upgrade-single.lua $PWD "${1}"
         elif [ "${2:0:1}" == "v" ]; then
-            lua $COSM_DIR/cli/cmd-upgrade-selection.lua $PWD "${1}" "${2:1}"
+            lua $COSM_DIR/cli/cmd-upgrade-single.lua $PWD "${1}" "${2:1}"
         else
             printf "ArgumentError: the signature is 'cosm upgrade <package name> [--latest, v<version>]'. See 'cosm --help'. \n \n"
             exit 1

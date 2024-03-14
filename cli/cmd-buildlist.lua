@@ -16,7 +16,7 @@ local nargs = #arg
 if nargs==1 then
     local root = arg[1]
     --write build list to file
-    Pkg.buildlist(root)
+    Pkg.buildlist(root, true)
     printstats(root)
 else
     abort()

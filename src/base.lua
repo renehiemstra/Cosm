@@ -49,9 +49,9 @@ end
 
 function Base.haskeyoftype(set, key, mytype)
   if type(set[key])==mytype then
-	return true
+	  return true
   else
-	return false
+	  return false
   end
 end
 
