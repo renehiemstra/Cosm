@@ -31,4 +31,13 @@ function testUpgradeToLatestCompatible()
     lu.assertEquals(Semver.latestCompatible(versions, "1.0.0"), "1.2.3")
 end
 
+function testUpgradeToLatestConstrained()
+    local versions = {"0.1.19","0.1.1","0.1.0","0.1.4","0.2.1", "0.2.5", "1.2.3"}
+    lu.assertEquals(Semver.latestConstrained(versions, "0"), "0.2.5")
+    lu.assertEquals(Semver.latestConstrained(versions, "1"), "1.2.3")
+    lu.assertEquals(Semver.latestConstrained(versions, "0.1"), "0.1.19")
+    lu.assertEquals(Semver.latestConstrained(versions, "1.2"), "1.2.3")
+    lu.assertEquals(Semver.latestConstrained(versions, "0.2.1"), "0.2.1")
+end
+
 lu.LuaUnit.run()

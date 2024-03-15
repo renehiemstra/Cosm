@@ -212,6 +212,18 @@ local semver = {
     return new(major, minor, patch, prerelease, build)
   end
 
+    --get latest version that is compatible with vmin
+  --assumes 'versions' is an array with 'string' versions
+  function semver.latest(versions, vmin)
+    local save = semver.parse(vmin)
+    for i,v in ipairs(versions) do
+        local current = semver.parse(v)
+        if save < current then --if save < current, then upgrade
+            save = current
+        end
+    end
+    return tostring(save)
+  end
 
   --get latest version that is compatible with vmin
   --assumes 'versions' is an array with 'string' versions
@@ -226,6 +238,22 @@ local semver = {
     return tostring(save)
   end
 
+  function semver.latestConstrained(versions, incomplete_version)
+    local save = semver(0,0,0)
+    for i,v in ipairs(versions) do
+      if v:match("^"..incomplete_version) then
+        local current = semver.parse(v)
+        if save < current then --if save to upgrade then upgrade
+          save = current
+        end
+      end
+    end
+    if save==semver(0,0,0) then
+      print("No version found that satisfies the constraint.")
+      os.exit(1)
+    end
+    return tostring(save)
+  end
 
   setmetatable(semver, { __call = function(_, ...) return new(...) end })
   semver._VERSION= semver(semver._VERSION)

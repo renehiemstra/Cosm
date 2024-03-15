@@ -66,6 +66,14 @@ runall(){
     cd $DEPOT_PATH/dev/E
     remote_add "E"
     add_commit_push E
+    cosm release v0.1.0
+    add_commit_push E
+    cosm release v0.1.1
+    add_commit_push E
+    cosm release v0.1.5
+    add_commit_push E
+    cosm release v0.2.1
+    add_commit_push E
     cosm release v1.1.0
     add_commit_push E
     cosm release v1.2.0
@@ -73,6 +81,10 @@ runall(){
     cosm release v1.3.0
 
     # add releases of E to the registry
+    cosm registry add TestRegistry v0.1.0 $DEPOT_PATH/localhub/E
+    cosm registry add TestRegistry v0.1.1 $DEPOT_PATH/localhub/E
+    cosm registry add TestRegistry v0.1.5 $DEPOT_PATH/localhub/E
+    cosm registry add TestRegistry v0.2.1 $DEPOT_PATH/localhub/E
     cosm registry add TestRegistry v1.1.0 $DEPOT_PATH/localhub/E
     cosm registry add TestRegistry v1.2.0 $DEPOT_PATH/localhub/E    
     cosm registry add TestRegistry v1.3.0 $DEPOT_PATH/localhub/E
@@ -80,6 +92,8 @@ runall(){
     # releases of F
     cd $DEPOT_PATH/dev/F
     remote_add "F"
+    add_commit_push F
+    cosm release v1.1.0
     add_commit_push F
     cosm release v1.1.0
 
@@ -94,7 +108,7 @@ runall(){
     cosm release v1.1.0
     add_commit_push D
     cosm release v1.2.0
-    cosm upgrade E --version 1.2.0
+    cosm upgrade E v1.2.0
     add_commit_push D
     cosm release v1.3.0
     add_commit_push D
@@ -112,7 +126,7 @@ runall(){
     cosm add D v1.1.0
     add_commit_push B
     cosm release v1.1.0
-    cosm upgrade D --version 1.3.0
+    cosm upgrade D v1.3.0
     add_commit_push B
     cosm release v1.2.0
 

@@ -13,9 +13,10 @@ end
 
 --extract command line arguments
 local nargs = #arg
-if nargs==1 then
+if nargs==2 then
     local root = arg[1]
-    Pkg.upgradeall(root) --upgrade all direct/transitive packages
+    local latest = arg[2]
+    Pkg.upgradeall(root, latest) --upgrade all direct/transitive packages to latest/latest compatible
     Pkg.buildlist(root) --write build list to file
     printstats(root)
 else

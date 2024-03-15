@@ -18,6 +18,13 @@ Simply download and run the `install.sh` script. Try the following to check that
 cosm --version
 ```
 
+## Versioning
+Consequent versioning is central to good package management. We follow the rules in [Semantic Versioning 2.0.0](https://semver.org/) and utilize the [semver.lua](https://github.com/kikito/semver.lua) library. In `cosm`, a specific instance of a package is uniquely defined by
+```
+    <name>@v<major>.<minor>.<patch>-<prerelease>+<build>
+```
+Packages with different major version numbers are considered as different packages. You can even use `<name>@v0` and `<name>@v1` in the same project. This could be useful when you want to move slowly to the new stable release.
+
 ## get status of a package or registry
 ```
 cosm status                             (implemented)
@@ -55,18 +62,20 @@ cosm registry update --all                          (implemented)
 ```
 Update and synchronize registry with the remote.
 
-## add/remove/upgrade/downgrade project dependencies
+## Add project dependencies
 ```
 cosm add <name> v<version>                          (implemented)
 cosm add <name> --latest                            (implemented)
 ```
 *Evaluate in a package root. Add a dependency to a project. Project <name> with version <version> will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries. If no version is specified it will add the newest available version that is compatible with other package dependencies.*
 
+## Remove project dependencies
 ```
 cosm rm <name>                                      (implemented)
 ```
 *Evaluate in a package root. Removes a project dependency.*
 
+## Upgrade project dependencies
 ```
 cosm upgrade <name> v<version>                      (implemented)
 cosm upgrade <name> --latest                        (implemented)
@@ -74,7 +83,26 @@ cosm upgrade <name> --latest                        (implemented)
 *Evaluate in a package root. Upgrades a project dependency to a new specified or unspecied (newest possible) version.*
 
 ```
-cosm downgrade <name> v<version>                    (implemented)
+cosm upgrade --all
+cosm upgrade --all --latest
+```
+Upgrade all direct and transitive project dependencies. By default, an upgrade seeks the latest compatible version. The `--latest` option is used to get the latest of each package, which may be incompatible with the current version you are using.
+
+It is possible to upgrade a single package separately:
+```
+cosm upgrade <name>
+cosm upgrade <name> --latest
+cosm upgrade <name> --version x
+cosm upgrade <name> --version x.y
+cosm upgrade <name> --version x.y.z
+cosm upgrade <name> --version x.y.z-alpha
+...
+```
+Again, the `--latest` option gets the latest possibly incompatible version of a package. By default, an upgrade seeks the latest compatible version. The `--version` option allows you to pick the latest version in the set constrained by the prescribed version number. This also, makes it possible to upgrade to a specific version number <x.y.z>, possibly, a pre-release.
+
+## downgrade project dependencies
+```
+cosm downgrade <name> v<version>                    (not implemented)
 ```
 *Evaluate in a package root. Downgrade a project dependency to a new specified or unspecied (newest possible) version.*
 

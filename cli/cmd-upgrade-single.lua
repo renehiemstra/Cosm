@@ -8,29 +8,25 @@ local function abort()
 end
 
 local function printstats(root, pkg, version)
-    if version~=nil then
-        print("Upgraded package "..pkg.." in "..root.." to v"..version..".")
-    else
-        print("Upgraded package "..pkg.." in "..root.." to the latest version.")
-    end
+    print("Upgraded package "..pkg.." in "..root.." to v"..version..".")
 end
 
 --extract command line arguments
 local nargs = #arg
-if nargs==2 then
+if nargs==3 then
     local root = arg[1]
-    local depname = arg[2]
-    local depversion = Pkg.upgradesinglepkg(root, depname, "latest") --upgrade single package
-    Pkg.buildlist(root) --write build list to file
-    printstats(root, depname, depversion)
-elseif nargs==3 then
+    local pkgname = arg[2]
+    local latest = (arg[3]=="latest")
+    --upgrade package to latest compatible
+    local dep = Pkg.upgradesinglepkg(root, pkgname, nil, latest) --upgrade single package
+    printstats(root, dep.name, dep.version)
+elseif nargs==4 then
     local root = arg[1]
-    local depname = arg[2]
-    local depversion = arg[3]
-    --write build list to file
-    Pkg.upgradesinglepkg(root, depname, depversion) --upgrade single package
-    Pkg.buildlist(root) --write build list to file
-    printstats(root, depname, depversion)
+    local pkgname = arg[2]
+    local version = arg[3]
+    --upgrade package to latest compatible
+    local dep = Pkg.upgradesinglepkg(root, pkgname, version, false) --upgrade single package
+    printstats(root, dep.name, dep.version)
 else
     abort()
 end

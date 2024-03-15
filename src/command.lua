@@ -51,8 +51,8 @@ function Cm.success(args)
         error("Provide `root` directory of command.\n\n")
     end
     --run command and output to an io device
-    -- local handle = io.popen("cd "..args.root.."; "..args.cm.." &> /dev/null; echo \"exitcode=\"$?")
-    local handle = io.popen("cd "..args.root.."; "..args.cm.."; echo \"exitcode=\"$?")
+    local handle = io.popen("cd "..args.root.."; "..args.cm.." &> /dev/null; echo \"exitcode=\"$?")
+    -- local handle = io.popen("cd "..args.root.."; "..args.cm.."; echo \"exitcode=\"$?")
     local s = handle:read("*a")
     handle:close()
     --extract message and exitcode

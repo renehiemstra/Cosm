@@ -74,19 +74,9 @@ end
 local function packageid(pkgname, version)
     --create package id - 
     local v = Semver.parse(version)
-    --for unstable releases (v.major==0) every minor release is considered
-    --as a different package    
-    if v.major==0 then
-        return pkgname.."@".."v"..v.major.."."..v.minor
     --for stable releases (v.major>0) every major release is considered
     --as a different package
-    else
-        return pkgname.."@".."v"..v.major
-    end
-end
-
-local function packageidext(pkgname, version)
-    return pkgname.."@v"..version
+    return pkgname.."@v"..v.major
 end
 
 local function addtominrequirmentslist(list, pkgname, version, upgrades, latest)
@@ -100,13 +90,11 @@ local function addtominrequirmentslist(list, pkgname, version, upgrades, latest)
     --add entry: 'version' -> latest compatible with 'version'
     --only do work if case is not yet treated.
     if list[pkgid][version]==nil then
-        -- print("pkg version is "..upgrades[pkgid])
-        -- Base.serialize(list[pkgid], 1)
         --load package from registry
         local registry = {}
         local pkg = {name=pkgname, version=version}
         if latest==true then
-            Pkg.loadpkg(registry, pkg, true) --upgrade to latest=[true, false]
+            Pkg.loadpkg(registry, pkg, true, true) --upgrade to latest=[true, false]
         else
             Pkg.loadpkg(registry, pkg, upgrades[pkgid]==true) --upgrade to latest=[true, false]
         end
@@ -407,10 +395,10 @@ function Pkg.buildlist(root, recompute_requirements)
 end
 
 --retreive metadata of a pkg and load the registry
-function Pkg.loadpkg(registry, pkg, upgrade)
-    -- if not type(upgrades)=="boolean" then
-    --     error("latest should be 'true' or 'false'.\n")
-    -- end
+function Pkg.loadpkg(registry, pkg, upgrade, upgrade_option)
+    if not type(upgrade)=="boolean" then
+        error("'upgrade' should be 'true' or 'false'.\n")
+    end
     if type(pkg.version) ~= "string" then
         error("Provide table with `version` as a string.\n\n")
     end
@@ -422,19 +410,33 @@ function Pkg.loadpkg(registry, pkg, upgrade)
     end
     --select version
     pkg.path = registry.table.packages[pkg.name].path
-    --possibly pick the latest compatible version
-    if upgrade then
+    --possibly upgrade to the latest/compatible version
+    if upgrade==true then
         local versions = dofile(registry.path.."/"..pkg.path.."/Versions.lua")
-        pkg.version = Semver.latestCompatible(versions, pkg.version)
+        if upgrade_option=="latest" then
+            --by default pick the latest (incompatible) version
+            pkg.version = Semver.latest(versions, pkg.version)
+        elseif upgrade_option=="compatible" then
+            --otherwise, pick the latest one that is compatible
+            --according to semver 2.0
+            pkg.version = Semver.latestCompatible(versions, pkg.version)
+        elseif upgrade_option=="constrained" then
+            --otherwise, pick the latest one, given a constraint
+            pkg.version = Semver.latestConstrained(versions, pkg.version)
+        end
     end
     --sanity-check if version is present in registry
     local versionpath = registry.path.."/"..pkg.path.."/"..pkg.version
     if not Cm.isdir(versionpath) then
-        error("Package "..pkg.name.." is registered in "..registry.name..", but version "..pkg.version.." is lacking.\n\n")
+        if not upgrade then
+            error("Package "..pkg.name.." is registered in "..registry.name..", but version "..pkg.version.." is lacking.\n")
+        else
+            error("Package "..pkg.name.." is registered in "..registry.name..", but there is no version compatible to "..pkg.version..".\n")
+        end
     end
 end
 
-function Pkg.upgradeall(root)
+function Pkg.upgradeall(root, upgrade_option)
     if not Proj.ispkg(root) then
         error("Current directory is not a valid package.")
     end
@@ -444,13 +446,16 @@ function Pkg.upgradeall(root)
     for d,v in pairs(pkg.deps) do
         local registry = {}
         local dep = {name=d, version=v}
-        Pkg.loadpkg(registry, dep, true) --load new version into dep.version
+        --load new version into dep.version
+        --upgrade set to true
+        --upgrade_option: "latest" or "compatible"
+        Pkg.loadpkg(registry, dep, true, upgrade_option)
         pkg.deps[d] = dep.version
     end
     Base.mark_as_simple_keys(pkg.deps)
     Proj.save(pkg, "Project.lua", root)
     --compute minimal requirements and save
-    local minreq = Pkg.getminimalrequirementlist(pkg, {}, true) --upgrade all = true
+    local minreq = Pkg.getminimalrequirementlist(pkg, {}, latest) --upgrade all = true
     Base.mark_as_general_keys(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root}
     saverequirementlist(minreq, ".cosm/Require.lua", root)
@@ -458,99 +463,90 @@ function Pkg.upgradeall(root)
     Pkg.buildlist(root, false)
 end
 
+local function decomposeid(id)
+    local a,b = id:match("(.+)@v(.+)")
+    return a, tostring(Semver.parse(b))
+end
+
 local function pkgnamefromid(id)
-    local a,b = id:match("(.+)@(.+)")
+    local a,b = id:match("(.+)@v(.+)")
     return a
 end
 
-local function pkgmajorversionfromid(id)
-    local a,b = id:match("(.+)@(.+)")
-    return b
+local function pkgversionfromid(id)
+    local a,b = id:match("(.+)@v(.+)")
+    return tostring(Semver.parse(b))
 end
 
 local function addconstraint(constraints, depname, version)
-    local depid
-    local count = 0
-    for id,_ in pairs(constraints) do
-        count = count + 1
-        if depname==pkgnamefromid(id) then
-            depid = id
-            break
-        end
-    end
-    if count~=nil then
-        if depid~=nil then
-            constraints[depid] = version
-        else
-            error("Package "..depname.." is not listed as a direct or transitive dependency.")
-        end
-    end
-    return constraints
+    error("Package "..depname.." is not listed as a direct or transitive dependency.")
 end
 
-function Pkg.upgradesinglepkg(root, depname, depversion)
-    --check arguments
-    if type(depname)~="string" then
-        error("Provide dependency name as a string.\n")
-    end
-    if type(depversion)~="string" then
-        error("Version number should be a string.")
-    end
+function Pkg.upgradesinglepkg(root, depname, new_incomplete_version, latest)
+    --check we are inside a pkg
     if not Proj.ispkg(root) then
         error("Current directory is not a valid package.")
     end
-    --check versions and update the project table
-    local pkg = fetchprojecttable(root)
-    local dep = {name=depname, version=pkg.deps[depname]}
-    local registry = {}
-
-    if depversion=="latest" then
-        Pkg.loadpkg(registry, dep, true) --load new version into dep.version
-    else
-
-
-    end
-
-
-
-
-
-
-
-    --in the case of a direct dependency, update Project.lua file
-    if dep.version~=nil then
-        --special case when checking out the latest version
-        if depversion=="latest" then
-            Pkg.loadpkg(registry, dep, true) --load new version into dep.version
-        else
-            local vold = Semver.parse(dep.version) --parse old version
-            local vnew = Semver.parse(depversion)  --parse new version
-            if vold==vnew then
-                error("Cannot upgrade: version already listed as a dependency.")
-            elseif vold>vnew then
-                error("Cannot upgrade: version is older than the one installed.")
-            end
-            dep.version = depversion --set new version    
-            Pkg.loadpkg(registry, dep, false) --load new version to see if it exists
+    --fetch a simplified representation of the previous build list
+    --get current version
+    local buildlist = fetchsimplebuildlist(root)
+    local currentversion
+    for id, version in pairs(buildlist) do
+        if pkgnamefromid(id)==depname then
+            currentversion = version
+            break
         end
-        --update version on Project.lua table
+    end
+    if currentversion==nil then
+        print("Not a dependency. Can't upgrade.")
+        os.exit(1)
+    end
+    --extract name and (incomplete) version
+    local dep = {name=depname, version=currentversion}
+    local upgrade_option
+    if new_incomplete_version~=nil then
+        dep.version = new_incomplete_version
+        upgrade_option = "constrained"
+    else
+        if latest==true then
+            upgrade_option = "latest"
+        else
+            upgrade_option = "compatible"
+        end
+    end
+    --check if package exists and load the latest compatible version
+    local registry = {}
+    --load new version into dep.version
+    --upgrade set to true
+    Pkg.loadpkg(registry, dep, true, upgrade_option)
+    --check if upgrade is possible
+    local vold = Semver.parse(currentversion) --parse old version
+    local vnew = Semver.parse(dep.version)   --parse new version
+    if vold==vnew then
+        print("Cannot upgrade: version already listed as a dependency.")
+        os.exit(1)
+    elseif vold>vnew then
+        print("Cannot upgrade: version is older than the one installed.")
+        os.exit(1)
+    end
+    --update Project.lua file in case of a direct dependency
+    local pkg = fetchprojecttable(root)
+    if pkg.deps[dep.name]~=nil then 
+        --update version in Project.lua table
         pkg.deps[depname] = dep.version
         Base.mark_as_simple_keys(pkg.deps)
         Proj.save(pkg, "Project.lua", root)
     end
-    --fetch a simplified representation of the previous build list
-    --and add constraint 
-    --(we don't want that an upgrade in A causes a downgrade in B)
-    local constraints = fetchsimplebuildlist(root)
-    addconstraint(constraints, depname, true)
+    --add constraint: we don't want that an upgrade in A causes a downgrade in B
     --compute requirement list that induces build list we want
-    local minreq = Pkg.getminimalrequirementlist(pkg, constraints, false) --upgrade all = false
+    local minreq = Pkg.getminimalrequirementlist(pkg, buildlist, latest)
     Base.mark_as_general_keys(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root} --should not be needed - do it anyway
     saverequirementlist(minreq, ".cosm/Require.lua", root)
     --compute induced build list (without recomputing minimal requirment list)
     Pkg.buildlist(root, false)
-    return dep.version --ToDo: can be nil
+    --return specs of upgraded package
+    return dep
 end
 
 function Pkg.develop(root, depname)
