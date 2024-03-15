@@ -13,7 +13,6 @@ cleanup_reg(){
     cosm registry delete "$reg" --force
 }
 # ToDo: add a check for validity of the git remote url
-&> /dev/null;
 remote_add(){
     cwd=$PWD
     # create remote repo
@@ -155,10 +154,9 @@ cleanall(){
     cleanup_pkg E
     cleanup_pkg F
     cleanup_reg TestRegistry
-    rm -rf "$DEPOT_PATH/clones"
-    mkdir "$DEPOT_PATH/clones"
-    rm -rf "$DEPOT_PATH/packages"
-    mkdir "$DEPOT_PATH/packages"
+    rm -rfv "$DEPOT_PATH/clones/*"
+    rm -rfv "$DEPOT_PATH/packages/*"
+    rm -rfv "$DEPOT_PATH/localhub/*"
 }
 
 # no input arguments - run test and cleanup
