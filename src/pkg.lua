@@ -34,28 +34,32 @@ function Pkg.status()
     end
 end
 
+--check out the source code
 local function checkout(specs)
     local root=Proj.terrahome.."/clones/"..specs.uuid
-    Cm.throw{cm="git pull", root=root} --get updates from remote - this is buggy
-    Cm.throw{cm="git checkout "..specs.sha1, root=root}
+    if Cm.isdir(root) then
+        if Git.isdetached(root) then
+            Cm.throw{cm="git checkout -", root=root}
+        end
+        if Git.isdetached(root) then
+            error("HEAD is still detached")
+        end
+        Cm.throw{cm="git pull", root=root} --get updates from remote - this is buggy
+        Cm.throw{cm="git checkout "..specs.sha1, root=root}
+        print("directory exists, checking out "..specs.version)
+    else
+        print("directory "..root.." does not exists")
+    end
 end
 
-local function fetchfromremote(specs)
-    --clone package in ~.cosm/clones/<pkg-uuid>
-    Cm.throw{cm="git clone "..specs.url.." "..specs.uuid, root=Proj.terrahome.."/clones"}
-    checkout(specs)
-end
-
---clone package in ~.cosm/clones/<pkg-uuid> and checkout the correct
---version number
+--clone package in ~.cosm/clones/<pkg-uuid>
 --assumes specs {name=<pkgname>, version=<pkgversion>, uuid=<...>}
 function Pkg.fetch(specs)
-    if Cm.isdir(Proj.terrahome.."/clones/"..specs.uuid) then
-        print("directory exists, checking out "..specs.version)
-        checkout(specs)
-    else
-        fetchfromremote(specs)
+    local root = Proj.terrahome.."/clones"
+    if not Cm.isdir(root.."/"..specs.uuid) then
+        Cm.throw{cm="git clone "..specs.url.." "..specs.uuid, root=root}
     end
+    checkout(specs)
 end
 
 --assumes registry is initialized via Reg.loadregistry(...)
@@ -180,6 +184,7 @@ end
 --save `projtable` to a Project.lua file
 local function saverequirementlist(req, rfile, root)
     --open Project.t and set to stdout
+    local oldout = io.output() 
     local file = io.open(root.."/"..rfile, "w")
     io.output(file)
     --write main project data to file
@@ -193,6 +198,7 @@ local function saverequirementlist(req, rfile, root)
     io.write("return Require")
     --close file
     io.close(file)
+    io.output(oldout)
 end
 
 --fetch buildlist, if it exists
@@ -239,7 +245,6 @@ end
 --and still needs to be filtered to obtain the maximum of all 
 --minimal requirements
 local function getrawbuildlist(root, recompute_requirments)
-    print(root)
     if not Proj.ispkg(root) then
         error("Current directory is not a valid package.")
     end
@@ -327,6 +332,7 @@ end
 local function savebuildlist(list, root)
     --open Buildlist.lua and set to stdout
     Cm.throw{cm="touch Buildlist.lua", root=root}
+    local oldout = io.output() 
     local file = io.open(root.."/Buildlist.lua", "w")
     io.output(file)
     --write main project data to file
@@ -339,6 +345,9 @@ local function savebuildlist(list, root)
     end
     io.write("}\n")
     io.write("return Buildlist")
+    --close file
+    io.close(file)
+    io.output(oldout)
 end
 
 --assumes a valid specs-entry from a build-list
@@ -378,6 +387,7 @@ function Pkg.buildlist(root, recompute_requirements)
     savebuildlist(list, root.."/.cosm")
     --make packages available in the buildlist
     -- Pkg.makeavailable(list)
+    return list
 end
 
 --get latest version that is compatible with v
@@ -533,11 +543,57 @@ function Pkg.upgradesinglepkg(root, depname, depversion)
     saverequirementlist(minreq, ".cosm/Require.lua", root)
     --compute induced build list (without recomputing minimal requirment list)
     Pkg.buildlist(root, false)
-    --extract the version number for a transitive dependency
-    if dep.version==nil then
-    end
+    return dep.version --ToDo: can be nil
+end
 
-    return dep.version
+function Pkg.develop(root, depname)
+    --check if we are inside a package
+    if not Proj.ispkg(root) then
+        error("Current directory is not a valid package.")
+    end
+    local pkg = fetchprojecttable(root)
+    if pkg.deps[depname]==nil then
+        error("Package is not a direct dependency.")
+    end
+    local depid = packageid(depname, pkg.deps[depname])
+    --recompute the buildlist, and the minimal requirement list
+    --just in case it's not up to date
+    print("Updating build list")
+    print("package id: "..depid)
+    local buildlist = Pkg.buildlist(root, true)
+    --retreive specs of package
+    local specs = buildlist[depid]
+    if specs==nil then
+        --this should never happen
+        error("Your build list is not consistent with your project file.")
+    end
+    --fetch the package, maybe it already exists in clones/uuid
+    --and copy HEAD to the /dev/ folder
+    local dest = Proj.terrahome.."/dev/"..depid
+    local src  = Proj.terrahome.."/clones/"..specs.uuid
+    print("Copying files")
+    if not Cm.isdir(dest) then
+        Pkg.fetch(specs)
+        print("checked out src code")
+        Cm.throw{cm="cp -r "..src.." "..dest} --copy source code, including git version control
+        print("copied src code")
+        if Git.isdetached(dest) then
+            print("head is detached. fixing.")
+            Cm.throw{cm="git checkout - ", root=dest}
+        end
+        if Git.isdetached(dest) then
+            error("Could not reset HEAD.")
+        end
+    end
+    print("Copying done")
+    --set package path and git hash
+    local dep = fetchprojecttable(dest)
+    specs.path = dest
+    specs.sha1 = Git.hash(dest)
+    specs.version = dep.version
+    buildlist[depid] = specs
+    --write buildlist back to file
+    savebuildlist(buildlist, root.."/.cosm")
 end
 
 --add a dependency to a project

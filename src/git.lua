@@ -107,6 +107,14 @@ function Git.istagged(root, version)
     return version==Cm.capturestdout("cd "..root.."; git tag -l "..version)
 end
 
+function Git.isdetached(root)
+    local isdetached = Cm.capturestdout("cd "..root.."; git symbolic-ref -q HEAD; echo $?")
+    if isdetached=="1" then
+        return true
+    end
+    return false
+end
+
 function Git.push(root, options)
     os.execute(
         "cd "..root.."; "..
