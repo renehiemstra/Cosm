@@ -681,47 +681,6 @@ function Pkg.rm(args)
     Pkg.buildlist(pkg.root, true)
 end
 
--- --downgrade a package to a lower version
--- --signature Pkg.downgrade{dep="...", version="xx.xx.xx"; root="."}
--- function Pkg.downgrade(args)
---     --check key-value arguments
---     if type(args)~="table" then
---         error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
---     elseif args.dep==nil or args.version==nil then
---         error("Provide table with `dep` (dependency) and `version` and optional `root` directory.\n\n")
---     elseif type(args.dep)~="string" or type(args.version)~="string" then
---         error("Provide table with `dep` (dependency) and `version` as a string.\n\n")
---     end
---     --set and check pkg root
---     if args.root==nil then
---         args.root = "."
---     end
---     if not Proj.ispkg(args.root) then
---         error("Current directory is not a valid package.")
---     end
---     --initialize dependency
---     local dep = {name=args.dep, version=args.version}
-
---     --initialize package properties
---     local pkg = fetchprojecttable(args.root)
---     pkg.root = args.root
---     --cannot remove a package that is not a dependency
---     local oldversion = pkg.deps[dep.name]
---     if oldversion==nil then
---         error("Provided package is not listed as a dependency.")
---     end
---     local v1 = Semver.parse(oldversion)
---     local v2 = Semver.parse(dep.version)
---     if v1==v2 then
---         error("Cannot downgrade: version already listed as a dependency.")
---     elseif v1<v2 then
---         error("Cannot downgrade: version is newer than the one installed.")
---     end
---     --rm and add new version
---     Pkg.rm(args)
---     Pkg.add(args)
--- end
-
 --release a new pkg version to the registry
 --signature: Reg.release{release=...("patch", "minor","major", or a version number)}
 function Pkg.release(release)
