@@ -100,6 +100,8 @@ local function addtominrequirmentslist(list, pkgname, version, upgrades, latest)
     --add entry: 'version' -> latest compatible with 'version'
     --only do work if case is not yet treated.
     if list[pkgid][version]==nil then
+        print("pkg version is "..upgrades[pkgid])
+        -- Base.serialize(list[pkgid], 1)
         --load package from registry
         local registry = {}
         local pkg = {name=pkgname, version=version}
@@ -284,6 +286,7 @@ end
 --determine the top-level requirment list
 local function reducerequirementlist(list, constraints)
     local minreq = {}
+    Base.serialize(list, 1)
     for dep,versions in pairs(list) do
         local implied = false
         local v
@@ -350,20 +353,23 @@ local function savebuildlist(list, root)
     io.output(oldout)
 end
 
---assumes a valid specs-entry from a build-list
---{name=<pkgname>, version=<pkgversion>, path=<packages/...>, clone=<clones/...>}
-local function makepkgavailable(specs)
+local function makepkgavailable(specs, including_version_control)
     local dest = Proj.terrahome.."/"..specs.path
-    if not Cm.isdir(specs.path) then
+    if not Cm.isdir(dest) then
         Pkg.fetch(specs) --checkout version in .cosm/clones/<uuid> or checkout from remote repo
         --leads to a detached HEAD
         --copy source to .cosm/packages
         local src = Proj.terrahome.."/clones/"..specs.uuid
-        Cm.throw{cm="mkdir -p "..dest}
         --copy all files and directories, except .git*
-        Cm.throw{cm="rsync -av --exclude=\".git*\" "..src.."/ "..dest}
-        Cm.throw{cm="git checkout -", root=src} --reset HEAD to previous
-        print("Done copying, package added")
+        if including_version_control then
+             --copy source code, including git version control
+            Cm.throw{cm="cp -r "..src.." "..dest}
+        else
+             --copy source code, exluding git version control
+            Cm.throw{cm="mkdir -p "..dest}
+            Cm.throw{cm="rsync -av --exclude=\".git*\" "..src.."/ "..dest}
+        end
+        Git.resethead(src)
     end
 end
 
@@ -373,7 +379,18 @@ function Pkg.makeavailable(buildlist)
     end
     --make packages in build list available
     for _,pkgspecs in pairs(buildlist) do
-        makepkgavailable(pkgspecs)
+        local topleveldir = pkgspecs.path:match("(.-)/")
+        local including_version_control
+        --for now we only support the 'dev' and 'packages' directory
+        if topleveldir=="dev" then
+            including_version_control = true
+        elseif topleveldir=="packages" then
+            including_version_control = false
+        else
+            error("Toplevel directory should be the 'packages' or 'dev' directory.")
+        end
+        --make the actual source code available
+        makepkgavailable(pkgspecs, including_version_control)
     end
 end
 
@@ -558,8 +575,6 @@ function Pkg.develop(root, depname)
     local depid = packageid(depname, pkg.deps[depname])
     --recompute the buildlist, and the minimal requirement list
     --just in case it's not up to date
-    print("Updating build list")
-    print("package id: "..depid)
     local buildlist = Pkg.buildlist(root, true)
     --retreive specs of package
     local specs = buildlist[depid]
@@ -569,31 +584,28 @@ function Pkg.develop(root, depname)
     end
     --fetch the package, maybe it already exists in clones/uuid
     --and copy HEAD to the /dev/ folder
-    local dest = Proj.terrahome.."/dev/"..depid
-    local src  = Proj.terrahome.."/clones/"..specs.uuid
-    print("Copying files")
-    if not Cm.isdir(dest) then
-        Pkg.fetch(specs)
-        print("checked out src code")
-        Cm.throw{cm="cp -r "..src.." "..dest} --copy source code, including git version control
-        print("copied src code")
-        if Git.isdetached(dest) then
-            print("head is detached. fixing.")
-            Cm.throw{cm="git checkout - ", root=dest}
-        end
-        if Git.isdetached(dest) then
-            error("Could not reset HEAD.")
-        end
-    end
-    print("Copying done")
-    --set package path and git hash
-    local dep = fetchprojecttable(dest)
-    specs.path = dest
-    specs.sha1 = Git.hash(dest)
-    specs.version = dep.version
-    buildlist[depid] = specs
-    --write buildlist back to file
-    savebuildlist(buildlist, root.."/.cosm")
+    --reset package specs path such that we can download it
+    specs.path = "dev/"..depid
+    makepkgavailable(specs, true) --with version control
+    --retrieve latest pkg version and git hash
+    local dep = fetchprojecttable(Proj.terrahome.."/"..specs.path)
+    specs.sha1 = Git.hash(Proj.terrahome.."/"..specs.path)
+    specs.version = dep.version.."+dev" --development version
+    -- --update build list
+    -- buildlist[depid] = specs
+    -- --write buildlist back to file
+    -- savebuildlist(buildlist, root.."/.cosm")
+    --get constraints
+    local constraints = fetchsimplebuildlist(root)
+    addconstraint(constraints, depname, specs.version)
+    --compute requirement list that induces build list we want
+    local minreq = Pkg.getminimalrequirementlist(pkg, constraints, false) --upgrade all = false
+    Base.mark_as_general_keys(minreq)
+    Base.serialize(minreq, 1)
+    Cm.throw{cm="mkdir -p .cosm", root=root} --should not be needed - do it anyway
+    saverequirementlist(minreq, ".cosm/Require.lua", root)
+    --compute induced build list (without recomputing minimal requirment list)
+    Pkg.buildlist(root, false)
 end
 
 --add a dependency to a project

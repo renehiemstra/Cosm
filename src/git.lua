@@ -115,6 +115,15 @@ function Git.isdetached(root)
     return false
 end
 
+function Git.resethead(root)
+    if Git.isdetached(root) then
+        Cm.throw{cm="git checkout - ", root=root}
+    end
+    if Git.isdetached(root) then
+        error("Could not reset HEAD.")
+    end
+end
+
 function Git.push(root, options)
     os.execute(
         "cd "..root.."; "..
