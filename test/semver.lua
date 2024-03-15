@@ -14,4 +14,21 @@ function testToString()
     lu.assertEquals(version, Semver.parse(tostring(version)))
 end
 
--- lu.LuaUnit.run()
+function testUpgradeCompatibility()
+    --major version 0
+    lu.assertTrue(Semver'0.1.1' ^ Semver'0.1.9')
+    lu.assertFalse(Semver'0.1.1' ^ Semver'0.2.0')
+    lu.assertFalse(Semver'0.1.1' ^ Semver'1.0.0')
+    --major version > 0
+    lu.assertTrue(Semver'2.11.3' ^ Semver'2.12.2')
+    lu.assertFalse(Semver'2.11.3' ^ Semver'3.0.0')
+end
+
+function testUpgradeToLatestCompatible()
+    local versions = {"0.1.19","0.1.1","0.1.0","0.1.4","0.2.1", "0.2.5", "1.2.3"}
+    lu.assertEquals(Semver.latestCompatible(versions, "0.1.3"), "0.1.19")
+    lu.assertEquals(Semver.latestCompatible(versions, "0.2.0"), "0.2.5")
+    lu.assertEquals(Semver.latestCompatible(versions, "1.0.0"), "1.2.3")
+end
+
+lu.LuaUnit.run()

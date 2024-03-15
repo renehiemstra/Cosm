@@ -406,31 +406,8 @@ function Pkg.buildlist(root, recompute_requirements)
     return list
 end
 
---get latest version that is compatible with v
---assumes input is a table loaded from a Versions.lua file
---implicitly assumes that vmin is a listed version
-local function getlatestcompatible(versions, vmin)
-    local save = Semver.parse(vmin)
-    if save.major==0 then
-        for i,v in ipairs(versions) do
-            local current = Semver.parse(v)
-            if current.major==save.major and current.minor==save.minor and current>save then
-                save = current
-            end
-        end
-    else
-        for i,v in ipairs(versions) do
-            local current = Semver.parse(v)
-            if current.major==save.major and current>save then
-                save = current
-            end
-        end
-    end
-    return tostring(save)
-end
-
 --retreive metadata of a pkg and load the registry
-function Pkg.loadpkg(registry, pkg, latest)
+function Pkg.loadpkg(registry, pkg, upgrade)
     -- if not type(upgrades)=="boolean" then
     --     error("latest should be 'true' or 'false'.\n")
     -- end
@@ -445,10 +422,10 @@ function Pkg.loadpkg(registry, pkg, latest)
     end
     --select version
     pkg.path = registry.table.packages[pkg.name].path
-    --possibly pick the last version
-    if latest then
+    --possibly pick the latest compatible version
+    if upgrade then
         local versions = dofile(registry.path.."/"..pkg.path.."/Versions.lua")
-        pkg.version = getlatestcompatible(versions, pkg.version)
+        pkg.version = Semver.latestCompatible(versions, pkg.version)
     end
     --sanity-check if version is present in registry
     local versionpath = registry.path.."/"..pkg.path.."/"..pkg.version
@@ -526,6 +503,20 @@ function Pkg.upgradesinglepkg(root, depname, depversion)
     local pkg = fetchprojecttable(root)
     local dep = {name=depname, version=pkg.deps[depname]}
     local registry = {}
+
+    if depversion=="latest" then
+        Pkg.loadpkg(registry, dep, true) --load new version into dep.version
+    else
+
+
+    end
+
+
+
+
+
+
+
     --in the case of a direct dependency, update Project.lua file
     if dep.version~=nil then
         --special case when checking out the latest version

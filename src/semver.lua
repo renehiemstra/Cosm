@@ -173,7 +173,11 @@ local semver = {
   -- in other words, "it's safe to upgrade from a to b"
   function mt:__pow(other)
     if self.major == 0 then
-      return self == other
+      --case self.major == 0 has been updated, relative to the initial implementation
+      --major release 0 is backwards compatible at patch level only
+      return self.major == other.major and
+             self.minor == other.minor and
+             self.patch <= other.patch
     end
     return self.major == other.major and
            self.minor <= other.minor
@@ -202,10 +206,26 @@ local semver = {
     return setmetatable(result, mt)
   end
   
-  function semver.parse(str)
+  function semver.parse(s)
+    local str = tostring(s)
     local major, minor, patch, prerelease, build = parseVersion(str)
     return new(major, minor, patch, prerelease, build)
   end
+
+
+  --get latest version that is compatible with vmin
+  --assumes 'versions' is an array with 'string' versions
+  function semver.latestCompatible(versions, vmin)
+    local save = semver.parse(vmin)
+    for i,v in ipairs(versions) do
+        local current = semver.parse(v)
+        if save ^ current then --if save to upgrade then upgrade
+            save = current
+        end
+    end
+    return tostring(save)
+  end
+
 
   setmetatable(semver, { __call = function(_, ...) return new(...) end })
   semver._VERSION= semver(semver._VERSION)
