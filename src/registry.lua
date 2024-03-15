@@ -85,6 +85,7 @@ function Reg.saveregistries(registries)
   if not Cm.isfile(Reg.regdir.."/List.lua") then
     Cm.throw{cm="touch List.lua", root=Reg.regdir}
   end
+  local oldout = io.output()
   local file = io.open(Reg.regdir.."/List.lua", "w")
   io.output(file)
   io.write("local List = {\n")
@@ -93,6 +94,8 @@ function Reg.saveregistries(registries)
   end
   io.write("}\n")
   io.write("return List")
+  io.close(file)
+  io.output(oldout)
 end
 
 --check if registry is listed in List.lua
@@ -151,11 +154,10 @@ function Reg.save(regtable, regfile, root)
   if not type(regtable) == "table" then
     error("Not a table.\n")
   end
-
   --open Registry.t and set to stdout
+  local oldout = io.output()
   local file = io.open(root.."/"..regfile, "w")
   io.output(file)
-
   --write main project data to file
   io.write("local Registry = {\n")
   io.write(string.format("    name = %q,\n", regtable.name))
@@ -169,6 +171,7 @@ function Reg.save(regtable, regfile, root)
   io.write("return Registry")
   --close file
   io.close(file)
+  io.output(oldout)
 end
 
 --create a registry
@@ -238,6 +241,7 @@ local function initpkgspecs(reg, pkg)
   table.insert(versions, pkg.version)
   table.sort(versions)
   --write Versions.lua
+  local oldout = io.output()
   local file = io.open(root.."/Versions.lua", "w")
   io.output(file)
   io.write("local Versions = {\n")
@@ -247,6 +251,7 @@ local function initpkgspecs(reg, pkg)
   io.write("}\n")
   io.write("return Versions")
   io.close(file)
+  io.output(oldout)
 
   --create directory of new release and add specs file
   Cm.throw{cm="mkdir -p "..root.."/"..pkg.version}
@@ -268,6 +273,7 @@ local function initpkgspecs(reg, pkg)
   io.write("}\n")
   io.write("return Project")
   io.close(file)
+  io.output(oldout)
 end
 
 function Reg.synchronize(registry)
@@ -371,6 +377,7 @@ function Reg.rmpkgversion(registry, pkg)
     --update versions table
     table.remove(pkg.versions, index)
     --remove version from Versions.lua
+    local oldout = io.output()
     local file = io.open(registry.path.."/"..pkg.path.."/Versions.lua", "w")
     io.output(file)
     io.write("Versions = {\n")
@@ -380,6 +387,7 @@ function Reg.rmpkgversion(registry, pkg)
     io.write("}\n")
     io.write("return Versions")
     io.close(file)
+    io.output(oldout)
     --remove version folders
     Cm.throw{cm="rm -rf "..pkg.path.."/"..pkg.version, root=registry.path}
   end

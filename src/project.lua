@@ -92,9 +92,9 @@ function Proj.save(projtable, projfile, root)
   end
 
   --open Project.t and set to stdout
+  local oldout = io.output()
   local file = io.open(root.."/"..projfile, "w")
   io.output(file)
-
   --write main project data to file
   io.write("Project = {\n")
   io.write(string.format("  name = %q,\n",projtable.name))
@@ -112,9 +112,9 @@ function Proj.save(projtable, projfile, root)
   Base.serialize(projtable.deps, 2)
   io.write("}\n")
   io.write("return Project")
-
   --close file
   io.close(file)
+  io.output(oldout)
 end
 
 --clone a git-remote terra package. throw an error if input is invalid.
@@ -150,16 +150,19 @@ end
 --generate Package.lua
 local function genprojfile(pkgname, root)
   local pkguuid = Proj.uuid()
+  local oldout = io.output() 
   local file = io.open(root.."/Project.lua", "w")
-  file:write("Project = {\n")
-  file:write("    name = \""..pkgname.."\",\n")
-  file:write("    uuid = \""..pkguuid.."\",\n")
-  file:write("    authors = {\""..Git.user.name.."<"..Git.user.email..">".."\"},\n")
-  file:write("    version = \"".."0.1.0".."\",\n")
-  file:write("    deps = {}\n")
-  file:write("}\n")
-  file:write("return Project")
-  file:close()
+  io.output(file)
+  io.write("Project = {\n")
+  io.write("    name = \""..pkgname.."\",\n")
+  io.write("    uuid = \""..pkguuid.."\",\n")
+  io.write("    authors = {\""..Git.user.name.."<"..Git.user.email..">".."\"},\n")
+  io.write("    version = \"".."0.1.0".."\",\n")
+  io.write("    deps = {}\n")
+  io.write("}\n")
+  io.write("return Project")
+  io.close(file)
+  io.output(oldout)
 end
 
 --create a terra pkg template

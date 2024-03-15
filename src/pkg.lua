@@ -100,7 +100,7 @@ local function addtominrequirmentslist(list, pkgname, version, upgrades, latest)
     --add entry: 'version' -> latest compatible with 'version'
     --only do work if case is not yet treated.
     if list[pkgid][version]==nil then
-        print("pkg version is "..upgrades[pkgid])
+        -- print("pkg version is "..upgrades[pkgid])
         -- Base.serialize(list[pkgid], 1)
         --load package from registry
         local registry = {}
@@ -286,7 +286,6 @@ end
 --determine the top-level requirment list
 local function reducerequirementlist(list, constraints)
     local minreq = {}
-    Base.serialize(list, 1)
     for dep,versions in pairs(list) do
         local implied = false
         local v
