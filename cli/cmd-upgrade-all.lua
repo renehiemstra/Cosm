@@ -15,8 +15,8 @@ end
 local nargs = #arg
 if nargs==2 then
     local root = arg[1]
-    local latest = arg[2]
-    Pkg.upgradeall(root, latest) --upgrade all direct/transitive packages to latest/latest compatible
+    local upgrade_option = arg[2]
+    Pkg.upgradeall(root, upgrade_option) --upgrade all direct/transitive packages to latest/latest compatible
     Pkg.buildlist(root) --write build list to file
     printstats(root)
 else

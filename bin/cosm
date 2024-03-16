@@ -43,16 +43,16 @@ add(){
 upgrade(){
     if [ "$#" -eq 1 ]; then
         if [ "$1" == "--all" ]; then
-            lua $COSM_DIR/cli/cmd-upgrade-all.lua $PWD false
+            lua $COSM_DIR/cli/cmd-upgrade-all.lua $PWD "compat"
         else
             checkname $1
             lua $COSM_DIR/cli/cmd-upgrade-single.lua $PWD "${1}" "compat"
         fi
     elif [ "$#" -eq 2 ]; then
         if [ "$1" == "--all" ] && [ "$2" == "--latest" ]; then
-            lua $COSM_DIR/cli/cmd-upgrade-all.lua $PWD true
+            lua $COSM_DIR/cli/cmd-upgrade-all.lua $PWD "latest"
         elif [ "$1" == "--latest" ] && [ "$2" == "--all" ]; then
-            lua $COSM_DIR/cli/cmd-upgrade-all.lua $PWD true
+            lua $COSM_DIR/cli/cmd-upgrade-all.lua $PWD "latest"
         elif [ "$2" == "--latest" ]; then
             checkname $1
             lua $COSM_DIR/cli/cmd-upgrade-single.lua $PWD "${1}" "latest"

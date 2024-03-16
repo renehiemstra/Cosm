@@ -79,7 +79,7 @@ local function packageid(pkgname, version)
     return pkgname.."@v"..v.major
 end
 
-local function addtominrequirmentslist(list, pkgname, version, upgrades, latest)
+local function addtominrequirmentslist(list, pkgname, version, constraints, upgrade, upgrade_option)
     --get package identifier
     local pkgid = packageid(pkgname, version)
     --create table on first entry
@@ -93,18 +93,23 @@ local function addtominrequirmentslist(list, pkgname, version, upgrades, latest)
         --load package from registry
         local registry = {}
         local pkg = {name=pkgname, version=version}
-        if latest==true then
-            Pkg.loadpkg(registry, pkg, true, true) --upgrade to latest=[true, false]
-        else
-            Pkg.loadpkg(registry, pkg, upgrades[pkgid]==true) --upgrade to latest=[true, false]
+        --Implement constraint on package
+        if constraints[pkgid]~=nil then
+            local vold = Semver.parse(constraints[pkgid])
+            local vnew = Semver.parse(pkg.version)
+            if vold > vnew then
+                pkg.version = constraints[pkgid]
+            end
         end
+        --load package from registry
+        Pkg.loadpkg(registry, pkg, upgrade, upgrade_option)
         --update requirement list
         list[pkgid][version] = pkg.version
         --get specs of this package
         local specs = loadpkgspecs(registry, pkg.name, pkg.version)
         --recursively add to minimal requirement list
         for depname,depversion in pairs(specs.deps) do
-            addtominrequirmentslist(list, depname, depversion, upgrades, latest)
+            addtominrequirmentslist(list, depname, depversion, constraints, upgrade, upgrade_option)
         end
     end
 end
@@ -112,12 +117,12 @@ end
 --compute the minimum requirement list
 --<pkg : table> contains the specs of the top-level package
 --<latest : boolean> signals that latest versions are used
-local function minrequirmentslist(pkg, upgrades, latest)
+local function minrequirmentslist(pkg, constraints, upgrade, upgrade_option)
     --our minimal requirement list
     local list = {}
     --loop over direct dependencies of our project
     for depname,depversion in pairs(pkg.deps) do
-        addtominrequirmentslist(list, depname, depversion, upgrades, latest)
+        addtominrequirmentslist(list, depname, depversion, constraints, upgrade, upgrade_option)
     end
     return list
 end
@@ -305,17 +310,10 @@ local function reducerequirementlist(list, constraints)
 end
 
 --determine the top-level requirements 
-function Pkg.getminimalrequirementlist(pkg, constraints, latest)
-    local list = minrequirmentslist(pkg, constraints, latest)
+function Pkg.getminimalrequirementlist(pkg, constraints, upgrade, upgrade_option)
+    local list = minrequirmentslist(pkg, constraints, upgrade, upgrade_option)
     --compute the top-level external requirments
     local minreq = reducerequirementlist(list, constraints)
-    --insert direct dependencies
-    for depname,depversion in pairs(pkg.deps) do
-        local pkgid = packageid(depname, depversion)
-        if minreq[pkgid]==nil then
-            minreq[pkgid] = depversion
-        end
-    end
     return minreq
 end
 
@@ -416,7 +414,7 @@ function Pkg.loadpkg(registry, pkg, upgrade, upgrade_option)
         if upgrade_option=="latest" then
             --by default pick the latest (incompatible) version
             pkg.version = Semver.latest(versions, pkg.version)
-        elseif upgrade_option=="compatible" then
+        elseif upgrade_option=="compat" then
             --otherwise, pick the latest one that is compatible
             --according to semver 2.0
             pkg.version = Semver.latestCompatible(versions, pkg.version)
@@ -455,7 +453,7 @@ function Pkg.upgradeall(root, upgrade_option)
     Base.mark_as_simple_keys(pkg.deps)
     Proj.save(pkg, "Project.lua", root)
     --compute minimal requirements and save
-    local minreq = Pkg.getminimalrequirementlist(pkg, {}, latest) --upgrade all = true
+    local minreq = Pkg.getminimalrequirementlist(pkg, {}, true, upgrade_option) --upgrade all = true
     Base.mark_as_general_keys(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root}
     saverequirementlist(minreq, ".cosm/Require.lua", root)
@@ -479,7 +477,8 @@ local function pkgversionfromid(id)
 end
 
 local function addconstraint(constraints, depname, version)
-    error("Package "..depname.." is not listed as a direct or transitive dependency.")
+    local id = packageid(depname, version)
+    constraints[id] = version
 end
 
 function Pkg.upgradesinglepkg(root, depname, new_incomplete_version, latest)
@@ -531,15 +530,16 @@ function Pkg.upgradesinglepkg(root, depname, new_incomplete_version, latest)
     end
     --update Project.lua file in case of a direct dependency
     local pkg = fetchprojecttable(root)
-    if pkg.deps[dep.name]~=nil then 
+    if pkg.deps[dep.name]~=nil then
         --update version in Project.lua table
         pkg.deps[depname] = dep.version
         Base.mark_as_simple_keys(pkg.deps)
         Proj.save(pkg, "Project.lua", root)
     end
     --add constraint: we don't want that an upgrade in A causes a downgrade in B
+    addconstraint(buildlist, dep.name, dep.version)
     --compute requirement list that induces build list we want
-    local minreq = Pkg.getminimalrequirementlist(pkg, buildlist, latest)
+    local minreq = Pkg.getminimalrequirementlist(pkg, buildlist, false, false)
     Base.mark_as_general_keys(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root} --should not be needed - do it anyway
     saverequirementlist(minreq, ".cosm/Require.lua", root)
