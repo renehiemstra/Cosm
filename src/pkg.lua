@@ -287,7 +287,6 @@ local function minimalversionselection(rawbuildlist)
     for pkgid,vdata in pairs(rawbuildlist) do
         --determine the maximum of the minimal requirements
         local maxversion = selectmaximalversion(vdata)
-        print(maxversion)
         --overwrite the raw-build list entry with maximum version of
         --the minimum requirements and save path to the package version
         rawbuildlist[pkgid] = vdata[maxversion]
@@ -475,6 +474,11 @@ function Pkg.upgradeall(root, upgrade_option)
     Pkg.buildlist(root, false)
 end
 
+local function decomposeid(id)
+    local a,b = id:match("(.+)@v(.+)")
+    return a, tostring(Semver.parse(b))
+end
+
 local function pkgnamefromid(id)
     local a,b = id:match("(.+)@v(.+)")
     return a
@@ -574,18 +578,11 @@ function Pkg.develop(root, depname)
         os.exit(1)
     end
     --retrieve specs of package
-    local dep = {name=depname, version=depversion}
     local depid = packageid(depname, depversion)
-
-    --use constraints from buildlist: use upgraded version
-    --also, we don't want that an upgrade in A causes a downgrade in B
-    addconstraint(buildlist, dep.name, dep.version)
-    Base.serialize(buildlist, 1)
-    --compute requirement list that induces build list we want
-    local pkg = fetchprojecttable(root)
-    local minreq = Pkg.getminimalrequirementlist(pkg, buildlist, false, false)
+    --fetch requirement list, don't recompute
+    local minreq = fetchrequirmentstable(root, false)
     --add constraint, signal development mode
-    -- minreq[depid] = pkgmajorversionfromid(depid).."+dev"
+    minreq[depid] = pkgmajorversionfromid(depid).."+dev"
     --write back to file
     Base.mark_as_general_keys(minreq)
     saverequirementlist(minreq, ".cosm/Require.lua", root)
