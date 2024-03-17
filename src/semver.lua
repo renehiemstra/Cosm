@@ -239,6 +239,7 @@ local semver = {
   end
 
   function semver.latestConstrained(versions, incomplete_version)
+
     local save = semver(0,0,0)
     for i,v in ipairs(versions) do
       if v:match("^"..incomplete_version) then

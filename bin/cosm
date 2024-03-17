@@ -247,6 +247,7 @@ case "$1" in
         ;;
 
     develop)
+        checkname $2
         lua $COSM_DIR/cli/cmd-develop.lua $PWD "${@:2}"
         ;;
 

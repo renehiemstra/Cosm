@@ -3,7 +3,7 @@ package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 local Pkg = require("src.pkg")
 
 local function abort()
-    print("ArgumentError: the signature is 'cosm develop <package name>'. See 'cosm --help'. \n")
+    print("ArgumentError: the signature is 'cosm develop <package name> v<major version>'. See 'cosm --help'. \n")
     os.exit(1)
 end
 
