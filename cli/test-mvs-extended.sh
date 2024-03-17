@@ -13,7 +13,6 @@ cleanup_reg(){
     cosm registry delete "$reg" --force
 }
 # ToDo: add a check for validity of the git remote url
-&> /dev/null;
 remote_add(){
     cwd=$PWD
     # create remote repo
@@ -67,6 +66,14 @@ runall(){
     cd $DEPOT_PATH/dev/E
     remote_add "E"
     add_commit_push E
+    cosm release v0.2.0
+    add_commit_push E
+    cosm release v0.2.1
+    add_commit_push E
+    cosm release v0.6.5
+    add_commit_push E
+    cosm release v1.0.0
+    add_commit_push E
     cosm release v1.1.0
     add_commit_push E
     cosm release v1.2.0
@@ -74,6 +81,10 @@ runall(){
     cosm release v1.3.0
 
     # add releases of E to the registry
+    cosm registry add TestRegistry v0.2.0 $DEPOT_PATH/localhub/E
+    cosm registry add TestRegistry v0.2.1 $DEPOT_PATH/localhub/E
+    cosm registry add TestRegistry v0.6.5 $DEPOT_PATH/localhub/E
+    cosm registry add TestRegistry v1.0.0 $DEPOT_PATH/localhub/E
     cosm registry add TestRegistry v1.1.0 $DEPOT_PATH/localhub/E
     cosm registry add TestRegistry v1.2.0 $DEPOT_PATH/localhub/E    
     cosm registry add TestRegistry v1.3.0 $DEPOT_PATH/localhub/E
@@ -82,26 +93,43 @@ runall(){
     cd $DEPOT_PATH/dev/F
     remote_add "F"
     add_commit_push F
+    cosm release v0.7.1
+    add_commit_push F
+    cosm release v0.8.2
+    add_commit_push F
+    cosm release v1.0.0
+    add_commit_push F
     cosm release v1.1.0
 
     # add releases of F to the registry
+    cosm registry add TestRegistry v0.7.1 $DEPOT_PATH/localhub/F
+    cosm registry add TestRegistry v0.8.2 $DEPOT_PATH/localhub/F
+    cosm registry add TestRegistry v1.0.0 $DEPOT_PATH/localhub/F
     cosm registry add TestRegistry v1.1.0 $DEPOT_PATH/localhub/F
 
     # releases of D
     cd $DEPOT_PATH/dev/D
     remote_add "D"
-    cosm add E v1.1.0
+    cosm add E v0.2.1
+    add_commit_push D
+    cosm release v0.4.0
+    cosm upgrade E --version 0.6
+    add_commit_push D
+    cosm release v0.5.1
+    cosm upgrade E --version 1.1
     add_commit_push D
     cosm release v1.1.0
     add_commit_push D
     cosm release v1.2.0
-    cosm upgrade E v1.2.0
+    cosm upgrade E --version 1.2.0
     add_commit_push D
     cosm release v1.3.0
     add_commit_push D
     cosm release v1.4.0
     
     # add releases of D to the registry
+    cosm registry add TestRegistry v0.4.0 $DEPOT_PATH/localhub/D
+    cosm registry add TestRegistry v0.5.1 $DEPOT_PATH/localhub/D
     cosm registry add TestRegistry v1.1.0 $DEPOT_PATH/localhub/D
     cosm registry add TestRegistry v1.2.0 $DEPOT_PATH/localhub/D    
     cosm registry add TestRegistry v1.3.0 $DEPOT_PATH/localhub/D
@@ -110,20 +138,39 @@ runall(){
     # releases of B
     cd $DEPOT_PATH/dev/B
     remote_add "B"
-    cosm add D v1.1.0
+    cosm add D v0.4.0
+    add_commit_push B
+    cosm release v0.3.0
+    add_commit_push B
+    cosm release v0.3.1
+    add_commit_push B
+    cosm release v0.4.0
+    cosm upgrade D --version 1.1.0
+    add_commit_push B
+    cosm release v1.0.0
     add_commit_push B
     cosm release v1.1.0
-    cosm upgrade D v1.3.0
+    cosm upgrade D --version 1.3.0
     add_commit_push B
     cosm release v1.2.0
 
     # add releases of B to the registry
+    cosm registry add TestRegistry v0.3.0 $DEPOT_PATH/localhub/B
+    cosm registry add TestRegistry v0.3.1 $DEPOT_PATH/localhub/B
+    cosm registry add TestRegistry v0.4.0 $DEPOT_PATH/localhub/B
+    cosm registry add TestRegistry v1.0.0 $DEPOT_PATH/localhub/B
     cosm registry add TestRegistry v1.1.0 $DEPOT_PATH/localhub/B
     cosm registry add TestRegistry v1.2.0 $DEPOT_PATH/localhub/B
 
     # releases of C
     cd $DEPOT_PATH/dev/C
     remote_add "C"
+    cosm add D v0.4.0
+    add_commit_push C
+    cosm release v0.3.0
+    add_commit_push C
+    cosm release v0.4.0
+    cosm rm D
     add_commit_push C
     cosm release v1.1.0
     cosm add D v1.4.0
@@ -135,6 +182,8 @@ runall(){
     cosm release v1.3.0
 
     # add releases of C to the registry
+    cosm registry add TestRegistry v0.3.0 $DEPOT_PATH/localhub/C
+    cosm registry add TestRegistry v0.4.0 $DEPOT_PATH/localhub/C
     cosm registry add TestRegistry v1.1.0 $DEPOT_PATH/localhub/C
     cosm registry add TestRegistry v1.2.0 $DEPOT_PATH/localhub/C
     cosm registry add TestRegistry v1.3.0 $DEPOT_PATH/localhub/C
@@ -143,9 +192,8 @@ runall(){
     cd $DEPOT_PATH/dev/A
     remote_add "A"
     add_commit_push A
-    cosm add B v1.2.0
-    cosm add C v1.2.0
-    cosm upgrade C --latest
+    cosm add B v0.3.0
+    cosm add C v0.3.0
 }
 
 cleanall(){
@@ -156,10 +204,9 @@ cleanall(){
     cleanup_pkg E
     cleanup_pkg F
     cleanup_reg TestRegistry
-    rm -rf "$DEPOT_PATH/clones"
-    mkdir "$DEPOT_PATH/clones"
-    rm -rf "$DEPOT_PATH/packages"
-    mkdir "$DEPOT_PATH/packages"
+    rm -rfv "$DEPOT_PATH/clones/*"
+    rm -rfv "$DEPOT_PATH/packages/*"
+    rm -rfv "$DEPOT_PATH/localhub/*"
 }
 
 # no input arguments - run test and cleanup

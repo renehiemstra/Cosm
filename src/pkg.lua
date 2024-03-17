@@ -438,20 +438,8 @@ function Pkg.upgradeall(root, upgrade_option)
     if not Proj.ispkg(root) then
         error("Current directory is not a valid package.")
     end
-    --check versions and update the project table
+    --fetch current project details
     local pkg = fetchprojecttable(root)
-    --loop over direct dependencies and update Project.lua
-    for d,v in pairs(pkg.deps) do
-        local registry = {}
-        local dep = {name=d, version=v}
-        --load new version into dep.version
-        --upgrade set to true
-        --upgrade_option: "latest" or "compatible"
-        Pkg.loadpkg(registry, dep, true, upgrade_option)
-        pkg.deps[d] = dep.version
-    end
-    Base.mark_as_simple_keys(pkg.deps)
-    Proj.save(pkg, "Project.lua", root)
     --compute minimal requirements and save
     local minreq = Pkg.getminimalrequirementlist(pkg, {}, true, upgrade_option) --upgrade all = true
     Base.mark_as_general_keys(minreq)
@@ -484,7 +472,8 @@ end
 function Pkg.upgradesinglepkg(root, depname, new_incomplete_version, latest)
     --check we are inside a pkg
     if not Proj.ispkg(root) then
-        error("Current directory is not a valid package.")
+        print("Current directory is not a valid package.")
+        os.exit(1)
     end
     --fetch a simplified representation of the previous build list
     --get current version
@@ -528,17 +517,11 @@ function Pkg.upgradesinglepkg(root, depname, new_incomplete_version, latest)
         print("Cannot upgrade: version is older than the one installed.")
         os.exit(1)
     end
-    --update Project.lua file in case of a direct dependency
-    local pkg = fetchprojecttable(root)
-    if pkg.deps[dep.name]~=nil then
-        --update version in Project.lua table
-        pkg.deps[depname] = dep.version
-        Base.mark_as_simple_keys(pkg.deps)
-        Proj.save(pkg, "Project.lua", root)
-    end
-    --add constraint: we don't want that an upgrade in A causes a downgrade in B
+    --use constraints from buildlist: use upgraded version
+    --also, we don't want that an upgrade in A causes a downgrade in B
     addconstraint(buildlist, dep.name, dep.version)
     --compute requirement list that induces build list we want
+    local pkg = fetchprojecttable(root)
     local minreq = Pkg.getminimalrequirementlist(pkg, buildlist, false, false)
     Base.mark_as_general_keys(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root} --should not be needed - do it anyway
@@ -552,11 +535,13 @@ end
 function Pkg.develop(root, depname)
     --check if we are inside a package
     if not Proj.ispkg(root) then
-        error("Current directory is not a valid package.")
+        print("Current directory is not a valid package.")
+        os.exit(1)
     end
     local pkg = fetchprojecttable(root)
     if pkg.deps[depname]==nil then
-        error("Package is not a direct dependency.")
+        print("Package is not a direct dependency.")
+        os.exit(1)
     end
     local depid = packageid(depname, pkg.deps[depname])
     --recompute the buildlist, and the minimal requirement list
@@ -566,7 +551,8 @@ function Pkg.develop(root, depname)
     local specs = buildlist[depid]
     if specs==nil then
         --this should never happen
-        error("Your build list is not consistent with your project file.")
+        print("Your build list is not consistent with your project file.")
+        os.exit(1)
     end
     --fetch the package, maybe it already exists in clones/uuid
     --and copy HEAD to the /dev/ folder

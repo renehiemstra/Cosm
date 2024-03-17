@@ -62,8 +62,12 @@ Update and synchronize registry with the remote.
 
 ## Add project dependencies
 ```
-cosm add <name> v<version>
+cosm add <name>
 cosm add <name> --latest
+cosm add <name> --version x
+cosm add <name> --version x.y
+cosm add <name> --version x.y.z
+cosm add <name> --version x.y.z-alpha
 ```
 *Evaluate in a package root. Add a dependency to a project. Project <name> with version <version> will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries. If no version is specified it will add the newest available version that is compatible with other package dependencies.*
 
