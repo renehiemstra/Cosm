@@ -2,7 +2,7 @@
 `Cosm` and its associated command-line-interface `cosm`, is a package manager and integrated package registry that is language agnostic. Support for new languages is implemented by writing a simple plugin. This makes `Cosm` ideally suited for multi-language projects.
 
 The design of `Cosm` is based on the following ideas
-* [Minimal version selection](https://research.swtch.com/vgo-mvs), leading to 100% reproducible builds without the need for a lockfile or pkg manifest that store the entire dependency tree.
+* [Minimal version selection](https://research.swtch.com/vgo-mvs), leading to 100% reproducible builds without the need for a lockfile.
 * Clear division of: (1) a language agnostic core functionality for package management, and (2) a language/build system specific top-layer that is extensible.
 * Integrated tools for package registries, allowing both publicly and privately hosted package registries, using the same interface.
 * A local depot directory (.cosm) that locally hosts registry and package data and interacts with remotes when required.
@@ -12,7 +12,7 @@ Currently the following languags are supported through plugins
 * [Lua](https://www.lua.org/)
 * [Terra](https://terralang.org/)
 
-Some of these ideas have been drawn from my experiences with the [Julia package manager](https://pkgdocs.julialang.org/v1/) and the excellent set of [blog posts](https://research.swtch.com/vgo) from Ross Cox on package management in Go. Compared to the Julia Pkg manager, `cosm` naturally features reproducible builds without the need for a package manifest file. Instead, the dependency tree is evaluated just in time based on a simple criterion. The result is a relatively simple core design that is language agnostic. Specific Language or build system support can be added via simple plugins.
+Some of these ideas have been drawn from my experiences with the [Julia package manager](https://pkgdocs.julialang.org/v1/) and the excellent set of [blog posts](https://research.swtch.com/vgo) from Ross Cox on package management in Go. `Cosm` naturally features reproducible builds without the need for a lock file. Instead, the dependency tree is evaluated just in time based on a simple criterion. The result is a relatively simple core design that is language agnostic. Specific Language or build system support can be added via simple plugins.
 
 ## Installation
 Currently, `Cosm` depends on [Lua]() and bash. Simply download and run the `install.sh` script. Try the following to check that calling `cosm` is successful
@@ -26,6 +26,14 @@ Consequent versioning is central to good package management. We follow the rules
     <name>@v<major>.<minor>.<patch>-<prerelease>+<build>
 ```
 Packages with different major version numbers are considered as different packages. You can even use `<name>@v0` and `<name>@v1` in the same project. This could be useful when you want to move slowly to a new stable release. Simply add `<name>@v1`, import its functionality inside a new namespace, and start migrating some of the api calls from `<name>@v0` to `<name>@v1`.
+
+## Minimal version selection
+[Minimal version selection](https://research.swtch.com/vgo-mvs) provides a consistent and simple approach to package management that leads to 100% reproducible build without the need for a lockfile. It works as follows:
+1. For each dependency you provide a minimum version.
+2. The algorithm inspects versions of all transitive dependencies and takes the maximum of the minimum versions for each encountered dependency.
+3. If you want to work with newer versions you can adjust, locally, the minimal requirments of a dependency, which then overrides the minimal version of said project.
+
+In cosm all of this is encapsulated in a simple set of commands, see below for the API.
 
 ## get status of a package or registry
 ```
