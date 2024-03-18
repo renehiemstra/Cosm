@@ -93,21 +93,25 @@ local function addtominrequirmentslist(list, pkgname, version, constraints, upgr
     if list[pkgid][version]==nil then
         --load package from registry
         local registry = {}
+        local specs
         local pkg = {name=pkgname, version=version}
         --Implement constraint on package
         if constraints[pkgid]~=nil then
             local vold = Semver.parse(constraints[pkgid])
             local vnew = Semver.parse(pkg.version)
-            if vold > vnew then
+            if vold.build=="dev" or vold > vnew then
                 pkg.version = constraints[pkgid]
             end
         end
         --load package from registry
-        Pkg.loadpkg(registry, pkg, upgrade, upgrade_option)
+        if Semver.parse(pkg.version).build=="dev" then
+            specs = Pkg.loaddevpkg(pkg)
+        else
+            Pkg.loadpkg(registry, pkg, upgrade, upgrade_option)
+            specs = loadpkgspecs(registry, pkg.name, pkg.version)
+        end
         --update requirement list
         list[pkgid][version] = pkg.version
-        --get specs of this package
-        local specs = loadpkgspecs(registry, pkg.name, pkg.version)
         --recursively add to minimal requirement list
         for depname,depversion in pairs(specs.deps) do
             addtominrequirmentslist(list, depname, depversion, constraints, upgrade, upgrade_option)
@@ -226,14 +230,18 @@ local function fetchbuildlist(root)
     return buildlist
 end
 
---fetch a simplified version of the buildlist, if it exists
-local function fetchsimplebuildlist(root)
-    local buildlist = fetchbuildlist(root)
+local function simplifybuildlist(buildlist)
     local simplebuildlist = {}
     for key, t in pairs(buildlist) do
         simplebuildlist[key] = t.version
     end
     return simplebuildlist
+end
+
+--fetch a simplified version of the buildlist, if it exists
+local function fetchsimplebuildlist(root)
+    local buildlist = fetchbuildlist(root)
+    return simplifybuildlist(buildlist)
 end
 
 --fetches the Require.lua file in .cosm if it exists
@@ -443,20 +451,45 @@ function Pkg.loadpkg(registry, pkg, upgrade, upgrade_option)
             pkg.version = Semver.latestConstrained(versions, pkg.version)
         end
     end
-    --are we in dev-mode?
-    local dev = Semver.parse(pkg.version).build=="dev"
-    if dev==false then
-        --sanity-check if version is present in registry
-        local versionpath = registry.path.."/"..pkg.path.."/"..pkg.version
-        if not Cm.isdir(versionpath) then
-            if not upgrade then
-                print("Package "..pkg.name.." is registered in "..registry.name..", but version "..pkg.version.." is lacking.")
-            else
-                print("Package "..pkg.name.." is registered in "..registry.name..", but there is no version compatible to "..pkg.version..".")
-            end
-            os.exit(1)
+    --sanity-check if version is present in registry
+    local versionpath = registry.path.."/"..pkg.path.."/"..pkg.version
+    if not Cm.isdir(versionpath) then
+        if not upgrade then
+            print("Package "..pkg.name.." is registered in "..registry.name..", but version "..pkg.version.." is lacking.")
+        else
+            print("Package "..pkg.name.." is registered in "..registry.name..", but there is no version compatible to "..pkg.version..".")
+        end
+        os.exit(1)
+    end
+end
+
+--load a development package - assumes that it has already been made available
+--input: pkg = {name=..., version=...}
+function Pkg.loaddevpkg(pkg)
+    local pkgid = packageid(pkg.name, pkg.version)
+    --retrieve specs of package
+    pkg.path = "dev/"..pkgid
+    --make package available in /cosm/dev/<pkgid>
+    if not Cm.isdir(Proj.terrahome.."/"..pkg.path) then
+        error("Directory "..Proj.terrahome.."/"..pkg.path.." does not exist.")
+    end
+    local project = fetchprojecttable(Proj.terrahome.."/"..pkg.path)
+    --update package info
+    pkg.version = project.version.."+dev"
+    pkg.sha1 = Git.hash(Proj.terrahome.."/"..pkg.path)
+    pkg.deps = project.deps
+    return pkg
+end
+
+local function loadspecs(buildlist, pkgname)
+    --extract package info from previous build list
+    for id, specs in pairs(buildlist) do
+        if specs.name==pkgname then
+            return specs
         end
     end
+    print("Package "..pkgname.." is not a dependency.")
+    os.exit(1)
 end
 
 function Pkg.upgradeall(root, upgrade_option)
@@ -563,52 +596,26 @@ function Pkg.develop(root, depname)
         print("Current directory is not a valid package.")
         os.exit(1)
     end
-    --fetch a simplified representation of the previous build list
-    --get current version
-    local buildlist = fetchsimplebuildlist(root)
-    local depversion
-    for id, version in pairs(buildlist) do
-        if pkgnamefromid(id)==depname then
-            depversion = version
-            break
-        end
-    end
-    if depversion==nil then
-        print("Not a dependency. To enable develop mode, first add package as a dependency.")
-        os.exit(1)
-    end
-    --retrieve specs of package
-    local depid = packageid(depname, depversion)
-    print(depid)
-    Base.serialize(buildlist, 1)
-    local specs = buildlist[depid]
-    Base.serialize(specs,1)
-    specs.path = "dev/"..depid
-    makepkgavailable(specs, true) --including version control
-    --load dep Project.lua
-    local dep = fetchprojecttable(Proj.terrahome.."/"..specs.path)
-    --use constraints from buildlist: use upgraded version
+    --load package using previous build list
+    local buildlist = fetchbuildlist(root)
+    --load specs of current dependency
+    local specs = loadspecs(buildlist, depname)
+    local dep = {name = depname, version=specs.version}
+    specs.path = "dev/"..packageid(dep.name, dep.version)
+    --make package available in development-mode
+    makepkgavailable(specs, true)
+    Pkg.loaddevpkg(dep)
     --also, we don't want that an upgrade in A causes a downgrade in B
-    addconstraint(buildlist, dep.name, dep.version.."+dev")
+    buildlist = fetchsimplebuildlist(root)
+    addconstraint(buildlist, dep.name, dep.version)
     --compute requirement list that induces build list we want
     local pkg = fetchprojecttable(root)
     local minreq = Pkg.getminimalrequirementlist(pkg, buildlist, false, false)
     Base.mark_as_general_keys(minreq)
     Cm.throw{cm="mkdir -p .cosm", root=root} --should not be needed - do it anyway
     saverequirementlist(minreq, ".cosm/Require.lua", root)
-    --compute induced build list (without recomputing minimal requirment list)
+    -- --compute induced build list (without recomputing minimal requirment list)
     Pkg.buildlist(root, false)
-    --return specs of upgraded package
-    return dep
-    -- --fetch requirement list, don't recompute
-    -- local minreq = fetchrequirmentstable(root, false)
-    -- --add constraint, signal development mode
-    -- minreq[depid] = pkgmajorversionfromid(depid).."+dev"
-    -- --write back to file
-    -- Base.mark_as_general_keys(minreq)
-    -- saverequirementlist(minreq, ".cosm/Require.lua", root)
-    --compute induced build list (without recomputing minimal requirment list)
-    -- Pkg.buildlist(root, false)
 end
 
 --add a dependency to a project

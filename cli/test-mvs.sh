@@ -4,7 +4,7 @@ DEPOT_PATH=$COSM_DEPOT_PATH
 
 cleanup_pkg(){
     pkg="$1"
-    rm -rf "$DEPOT_PATH/dev/$pkg"
+    rm -rf "$DEPOT_PATH/examples/$pkg"
     rm -rf "$DEPOT_PATH/localhub/$pkg"
 }
 cleanup_reg(){
@@ -21,7 +21,7 @@ remote_add(){
     cd $DEPOT_PATH/localhub/$pkg
     git init --bare &> /dev/null;
     # add remote to project
-    cd "$DEPOT_PATH/dev/$pkg"
+    cd "$DEPOT_PATH/examples/$pkg"
     git remote add origin $DEPOT_PATH/localhub/$pkg &> /dev/null;
     git add . > /dev/null
     git commit -m "<dep> added dependencies" &> /dev/null;
@@ -32,7 +32,7 @@ remote_add(){
 add_commit_push(){
     cwd=$PWD
     pkg=$1
-    cd "$DEPOT_PATH/dev/$pkg"
+    cd "$DEPOT_PATH/examples/$pkg"
     git add . &> /dev/null;
     git commit -m "<wip>" &> /dev/null;
     git pull &> /dev/null;
@@ -52,7 +52,7 @@ runall(){
     cosm registry init TestRegistry $DEPOT_PATH/localhub/TestRegistry
 
     # root folder in which to create packages
-    cd $DEPOT_PATH/dev
+    cd $DEPOT_PATH/examples
 
     # create packages
     cosm init A --template lua/PkgTemplate
@@ -63,7 +63,7 @@ runall(){
     cosm init F --template lua/PkgTemplate
 
     # releases of E
-    cd $DEPOT_PATH/dev/E
+    cd $DEPOT_PATH/examples/E
     remote_add "E"
     add_commit_push E
     cosm release v1.1.0
@@ -78,7 +78,7 @@ runall(){
     cosm registry add TestRegistry v1.3.0 $DEPOT_PATH/localhub/E
 
     # releases of F
-    cd $DEPOT_PATH/dev/F
+    cd $DEPOT_PATH/examples/F
     remote_add "F"
     add_commit_push F
     cosm release v1.1.0
@@ -87,7 +87,7 @@ runall(){
     cosm registry add TestRegistry v1.1.0 $DEPOT_PATH/localhub/F
 
     # releases of D
-    cd $DEPOT_PATH/dev/D
+    cd $DEPOT_PATH/examples/D
     remote_add "D"
     cosm add E v1.1.0
     add_commit_push D
@@ -107,7 +107,7 @@ runall(){
     cosm registry add TestRegistry v1.4.0 $DEPOT_PATH/localhub/D
 
     # releases of B
-    cd $DEPOT_PATH/dev/B
+    cd $DEPOT_PATH/examples/B
     remote_add "B"
     cosm add D v1.1.0
     add_commit_push B
@@ -121,7 +121,7 @@ runall(){
     cosm registry add TestRegistry v1.2.0 $DEPOT_PATH/localhub/B
 
     # releases of C
-    cd $DEPOT_PATH/dev/C
+    cd $DEPOT_PATH/examples/C
     remote_add "C"
     add_commit_push C
     cosm release v1.1.0
@@ -139,7 +139,7 @@ runall(){
     cosm registry add TestRegistry v1.3.0 $DEPOT_PATH/localhub/C
 
     # releases of A
-    cd $DEPOT_PATH/dev/A
+    cd $DEPOT_PATH/examples/A
     remote_add "A"
     add_commit_push A
     cosm add B v1.2.0
