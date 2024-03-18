@@ -29,7 +29,7 @@ Packages with different major version numbers are considered as different packag
 
 ## Minimal version selection
 [Minimal version selection](https://research.swtch.com/vgo-mvs) provides a consistent and simple approach to package management that leads to 100% reproducible build without the need for a lockfile. It works as follows:
-1. For each dependency you provide a minimum version.
+1. Each project provides minimal versions of each dependency.
 2. The algorithm inspects versions of all transitive dependencies and takes the maximum of the minimum versions for each encountered dependency.
 3. If you want to work with newer versions you can adjust, locally, the minimal requirments of a dependency, which then overrides the minimal version of said project.
 

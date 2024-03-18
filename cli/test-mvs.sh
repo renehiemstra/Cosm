@@ -94,7 +94,7 @@ runall(){
     cosm release v1.1.0
     add_commit_push D
     cosm release v1.2.0
-    cosm upgrade E --version 1.2.0
+    cosm upgrade E v1.2.0
     add_commit_push D
     cosm release v1.3.0
     add_commit_push D
@@ -112,7 +112,7 @@ runall(){
     cosm add D v1.1.0
     add_commit_push B
     cosm release v1.1.0
-    cosm upgrade D --version 1.3.0
+    cosm upgrade D v1.3.0
     add_commit_push B
     cosm release v1.2.0
 

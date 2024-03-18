@@ -113,15 +113,15 @@ runall(){
     cosm add E v0.2.1
     add_commit_push D
     cosm release v0.4.0
-    cosm upgrade E --version 0.6
+    cosm upgrade E v0.6
     add_commit_push D
     cosm release v0.5.1
-    cosm upgrade E --version 1.1
+    cosm upgrade E v1.1
     add_commit_push D
     cosm release v1.1.0
     add_commit_push D
     cosm release v1.2.0
-    cosm upgrade E --version 1.2.0
+    cosm upgrade E v2.0
     add_commit_push D
     cosm release v1.3.0
     add_commit_push D
@@ -145,12 +145,12 @@ runall(){
     cosm release v0.3.1
     add_commit_push B
     cosm release v0.4.0
-    cosm upgrade D --version 1.1.0
+    cosm upgrade D v1.1.0
     add_commit_push B
     cosm release v1.0.0
     add_commit_push B
     cosm release v1.1.0
-    cosm upgrade D --version 1.3.0
+    cosm upgrade D v1.3.0
     add_commit_push B
     cosm release v1.2.0
 
