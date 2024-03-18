@@ -14,7 +14,7 @@ Currently the following languags are supported through plugins
 
 Some of these ideas have been drawn from my experiences with the [Julia package manager](https://pkgdocs.julialang.org/v1/) and the excellent set of [blog posts](https://research.swtch.com/vgo) from Ross Cox on package management in Go. Compared to the Julia Pkg manager, `cosm` naturally features reproducible builds without the need for a package manifest file. Instead, the dependency tree is evaluated just in time based on a simple criterion. The result is a relatively simple core design that is language agnostic. Specific Language or build system support can be added via simple plugins.
 
-## Instalation
+## Installation
 Currently, `Cosm` depends on [Lua]() and bash. Simply download and run the `install.sh` script. Try the following to check that calling `cosm` is successful
 ```
 cosm --version
@@ -41,17 +41,17 @@ cosm registry status <registry name>
 ```
 cosm init <package name>
 ```
-Evaluate in root directory of an existing project. A 'Project.lua' file is created for project <package name>.
+*Evaluate in root directory of an existing project. A 'Project.lua' file is created for project package name.*
 ```
 cosm init <package name> --template <language/template>
 ```
-*Evaluate in parent folder of a new package. Adds a new package with name <package name> according to a template (in .cosm/lang). Currently, only a lua and terra template are implemented.*
+*Evaluate in parent folder of a new package. Adds a new package with name package name according to a template (in .cosm/lang). Currently, only a lua and terra template are implemented.*
 
 ## instantiate a new registry / delete a registry / update a registry
 ```
 cosm registry init <registry name> <giturl>
 ```
-*Adds a new package registry with name <name> (in .cosm/registries) with remote located at <giturl>. The <giturl> should point to an empty remote git repository.*
+*Adds a new package registry with name name (in .cosm/registries) with remote located at giturl. The giturl should point to an empty remote git repository.*
 
 ```
 cosm registry delete <registry name> [--force]
@@ -68,7 +68,7 @@ Update and synchronize registry with the remote.
 ```
 cosm add <name> v<version>
 ```
-*Evaluate in a package root. Add a dependency to a project. Project <name> with version <version> will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries.*
+*Evaluate in a package root. Add a dependency to a project. Project name with version version will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries.*
 
 ## Remove project dependencies
 ```
@@ -109,8 +109,7 @@ Its possible to extend functionality or fix bugs in one of your managed dependen
 ```
 cosm develop <package name>
 ```
-*Open a dependency to a project, but in development mode, which means it checks out a 'git clone' of the latest version of <package name> in `cosm/dev/<package name>@v<major>` that you can freely develop in. The changes are imediately available in your parent project.*
-
+*Open a dependency to a project, but in development mode, which means it checks out a 'git clone' of the latest version of package name in `cosm/dev/<package name>@v<major>` that you can freely develop in. The changes are imediately available in your parent project.*
 
 ## downgrade project dependencies
 ```
@@ -122,13 +121,13 @@ cosm downgrade <name> v<version>                    (not implemented)
 ```
 cosm registry add <registry name> <giturl>          (implemented)
 ```
-*Register a package to <registry> (in .cosm/registries). An error is thrown if the current version already exists in the registry. The remote repository of the registry is updated automatically.*
+*Register a package to registry (in .cosm/registries). An error is thrown if the current version already exists in the registry. The remote repository of the registry is updated automatically.*
 
 ```
 cosm registry rm <registry name> <package name> [--force]                (implemented)
 cosm registry rm <registry name> <package name> v<version> [--force]     (implemented)
 ```
-*Remove a <version> of a package or a package entirely from the <registry> (in .cosm/registries). The remote repository of the registry is updated automatically.*
+*Remove a version of a package or a package entirely from the registry (in .cosm/registries). The remote repository of the registry is updated automatically.*
 
 ## register a new release of a project
 ```
