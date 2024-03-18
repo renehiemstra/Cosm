@@ -367,7 +367,7 @@ local function makepkgavailable(specs, including_version_control)
         --copy all files and directories, except .git*
         if including_version_control then
             --copy source code, including git version control
-            Git.resethead(src) --reset HEAD befor copying
+            Git.resethead(src) --reset HEAD before copying
             Cm.throw{cm="cp -r "..src.." "..dest}
         else
              --copy source code, exluding git version control
@@ -579,15 +579,36 @@ function Pkg.develop(root, depname)
     end
     --retrieve specs of package
     local depid = packageid(depname, depversion)
-    --fetch requirement list, don't recompute
-    local minreq = fetchrequirmentstable(root, false)
-    --add constraint, signal development mode
-    minreq[depid] = pkgmajorversionfromid(depid).."+dev"
-    --write back to file
+    print(depid)
+    Base.serialize(buildlist, 1)
+    local specs = buildlist[depid]
+    Base.serialize(specs,1)
+    specs.path = "dev/"..depid
+    makepkgavailable(specs, true) --including version control
+    --load dep Project.lua
+    local dep = fetchprojecttable(Proj.terrahome.."/"..specs.path)
+    --use constraints from buildlist: use upgraded version
+    --also, we don't want that an upgrade in A causes a downgrade in B
+    addconstraint(buildlist, dep.name, dep.version.."+dev")
+    --compute requirement list that induces build list we want
+    local pkg = fetchprojecttable(root)
+    local minreq = Pkg.getminimalrequirementlist(pkg, buildlist, false, false)
     Base.mark_as_general_keys(minreq)
+    Cm.throw{cm="mkdir -p .cosm", root=root} --should not be needed - do it anyway
     saverequirementlist(minreq, ".cosm/Require.lua", root)
     --compute induced build list (without recomputing minimal requirment list)
     Pkg.buildlist(root, false)
+    --return specs of upgraded package
+    return dep
+    -- --fetch requirement list, don't recompute
+    -- local minreq = fetchrequirmentstable(root, false)
+    -- --add constraint, signal development mode
+    -- minreq[depid] = pkgmajorversionfromid(depid).."+dev"
+    -- --write back to file
+    -- Base.mark_as_general_keys(minreq)
+    -- saverequirementlist(minreq, ".cosm/Require.lua", root)
+    --compute induced build list (without recomputing minimal requirment list)
+    -- Pkg.buildlist(root, false)
 end
 
 --add a dependency to a project
