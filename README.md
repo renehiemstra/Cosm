@@ -1,5 +1,5 @@
 # Cosm - package manager
-`Cosm` and its associated command-line-interface `cosm`, is a package manager and integrated package registry that is language agnostic. Support for new languages is implemented easily by writing a simple plugin. This makes `Cosm` ideally suited for multi-language projects. At this stage plugins for [Lua]() and [Terra]() have been implemented. 
+`Cosm` and its associated command-line-interface `cosm`, is a package manager and integrated package registry that is language agnostic. Support for new languages is implemented by writing a simple plugin. This makes `Cosm` ideally suited for multi-language projects.
 
 The design of `Cosm` is based on the following ideas
 * [Minimal version selection](https://research.swtch.com/vgo-mvs), leading to 100% reproducible builds without the need for a lockfile or pkg manifest that store the entire dependency tree.
@@ -7,6 +7,10 @@ The design of `Cosm` is based on the following ideas
 * Integrated tools for package registries, allowing both publicly and privately hosted package registries, using the same interface.
 * A local depot directory (.cosm) that locally hosts registry and package data and interacts with remotes when required.
 * A command-line-interface that is easy and feels like `git`.
+
+Currently the following languags are supported through plugins
+* [Lua](https://www.lua.org/)
+* [Terra](https://terralang.org/)
 
 Some of these ideas have been drawn from my experiences with the [Julia package manager](https://pkgdocs.julialang.org/v1/) and the excellent set of [blog posts](https://research.swtch.com/vgo) from Ross Cox on package management in Go. Compared to the Julia Pkg manager, `cosm` naturally features reproducible builds without the need for a package manifest file. Instead, the dependency tree is evaluated just in time based on a simple criterion. The result is a relatively simple core design that is language agnostic. Specific Language or build system support can be added via simple plugins.
 
@@ -62,14 +66,9 @@ Update and synchronize registry with the remote.
 
 ## Add project dependencies
 ```
-cosm add <name>
-cosm add <name> --latest
-cosm add <name> --version x
-cosm add <name> --version x.y
-cosm add <name> --version x.y.z
-cosm add <name> --version x.y.z-alpha
+cosm add <name> v<version>
 ```
-*Evaluate in a package root. Add a dependency to a project. Project <name> with version <version> will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries. If no version is specified it will add the newest available version that is compatible with other package dependencies.*
+*Evaluate in a package root. Add a dependency to a project. Project <name> with version <version> will be looked up in any of the available local registries. If a package with the same name exists in multiple registries then the user will be prompted to choose the registry from the available listed registries.*
 
 ## Remove project dependencies
 ```
@@ -81,19 +80,22 @@ cosm rm <name>
 You can upgrade any direct or transitive dependency separately using one of the following commands:
 ```
 cosm upgrade <name>
-cosm upgrade <name> --latest
-cosm upgrade <name> --version x
-cosm upgrade <name> --version x.y
-cosm upgrade <name> --version x.y.z
-cosm upgrade <name> --version x.y.z-alpha
+cosm upgrade <name> v<x>
+cosm upgrade <name> v<x.y>
+cosm upgrade <name> v<x.y.z>
+cosm upgrade <name> v<x.y.z-alpha>
 ```
-*Evaluate in a package root. Upgrading is done conservatively, meaning that the latest compatible version is chosen by default. The '--latest' option changes the default behavior and pickes the latest registered version of the package. The '--version' option seeks a conservative upgrade given the provided constraint. For example,*
+*Evaluate in a package root. Upgrading is done conservatively, meaning that the latest compatible version is chosen by default that satisfies the provided constraint. For example,*
 ```
-cosm upgrade <name> --version x.y
+cosm upgrade <name> v<x.y>
 ```
 *Upgrades a package to version 'x.y.z' where z is the latest patch version in the series. If you want to upgrade to an exact version then you simply specify the constraint*
 ```
-cosm upgrade <name> --version x.y.z
+cosm upgrade <name> v<x.y.z>
+```
+*The '--latest' option changes the default behavior and pickes the latest registered version of the package.*
+```
+cosm upgrade <name> --latest
 ```
 *If you want to upgrade all direct and transitive project dependencies you can use one of the following commands.*
 ```
@@ -102,16 +104,19 @@ cosm upgrade --all --latest
 ```
 *By default, an upgrade seeks the latest compatible version. The `--latest` option is used to get the latest of each package, which may be incompatible with the current version you are using. The order of the options is not relevant.*
 
+## Develop a project dependency
+Its possible to extend functionality or fix bugs in one of your managed dependencies and directly use it in your parent project without issuing new releases of your dependency. This is particularly useful at early development stages and simply works as follows
+```
+cosm develop <package name>
+```
+*Open a dependency to a project, but in development mode, which means it checks out a 'git clone' of the latest version of <package name> in `cosm/dev/<package name>@v<major>` that you can freely develop in. The changes are imediately available in your parent project.*
+
+
 ## downgrade project dependencies
 ```
 cosm downgrade <name> v<version>                    (not implemented)
 ```
 *Evaluate in a package root. Downgrade a project dependency to a new specified or unspecied (newest possible) version.*
-
-```
-cosm develop <package name>                         (not implemented)
-```
-*Evaluate in parent folder of a package. Add a dependency to a project, but in development mode, which means it checks out a 'git clone' of the latest version of <package name> in 'cosm/dev' that you can freely develop in. The changes are imediately available in your parent project.*
 
 ## register a project to a registry / remove from registry
 ```
