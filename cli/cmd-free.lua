@@ -3,20 +3,22 @@ package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 local Pkg = require("src.pkg")
 
 local function abort()
-    print("ArgumentError: the signature is 'cosm develop <package name>'. See 'cosm --help'. \n")
+    print("ArgumentError: the signature is 'cosm free <package name>'. See 'cosm --help'. \n")
     os.exit(1)
 end
 
 local function printstats(pkg)
-    print("You can now develop "..pkg.name.." v"..pkg.version.." located at "..pkg.path..".")
+    print("Package "..pkg.name.." in dev-mode set to release "..pkg.version..".")
 end
 
 --extract command line arguments
 local nargs = #arg
 if nargs==2 then
     local root, pkg = arg[1], arg[2]
-    local dep = Pkg.develop(root, pkg)
-    printstats(dep)
+    local dep = Pkg.free(root, pkg)
+    if dep~=nil then
+        printstats(dep)
+    end
 else
     abort()
 end

@@ -245,6 +245,11 @@ case "$1" in
         lua $COSM_DIR/cli/cmd-develop.lua $PWD "${@:2}"
         ;;
 
+    free)
+        checkname $2
+        lua $COSM_DIR/cli/cmd-free.lua $PWD "${@:2}"
+        ;;
+
     registry)       # cosm registry
         registry "${@:2}"
         ;;

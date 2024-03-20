@@ -2,14 +2,42 @@ local Base = require("src.base")
 local Cm = require("src.command")
 local Git = require("src.git")
 local Lang = require("src.langext")
+local Semver = require("src.semver")
 
 local Proj = {}
 
 Proj.homedir = Cm.capturestdout("echo ~$user")
 Proj.terrahome = os.getenv("COSM_DEPOT_PATH")
 
+local function packageid(pkgname, version)
+  --create package id - 
+  local v = Semver.parse(version)
+  --for stable releases (v.major>0) every major release is considered
+  --as a different package
+  return pkgname.."@v"..v.major
+end
+
+function Proj.init()
+  --parent project directory
+  local parentprojectfile = arg[0]
+  local parentprojectdir = parentprojectfile:match("(.*)/")
+  local cosm = parentprojectdir.."/../.cosm/"
+  --load buildlist
+  local buildlist = dofile(cosm.."/buildlist.lua")
+  --add to path variable
+  for id, specs in pairs(buildlist) do
+    package.path = package.path .. "; "..Proj.terrahome.."/"..specs.path.."/src/?.lua"
+  end
+end
+
 --load a lua/terra package
 function Proj.require(depname)
+  --parent project directory
+  local parentprojectfile = arg[0]
+  local parentprojectdir = parentprojectfile:match("(.*)/")
+  local cosm = parentprojectdir.."/../.cosm/"
+  --load buildlist
+  local buildlist = dofile(cosm.."/buildlist.lua")
   --determine file where the function call emenates from
   local callfile = debug.getinfo(2, "S").source:sub(2)
   --determine the folder of this file
@@ -18,33 +46,32 @@ function Proj.require(depname)
   if calldir==nil then
     calldir = "."
   end
-  --check if root is an actual pkg
+  --check if current directory is an actual pkg
   if not Proj.ispkg(calldir.."/..") then
-    error("Error: Directory does not satisfy the requirements of a package.\n\n")
+    print("Error: Directory does not satisfy the requirements of a package.")
+    os.exit(1)
   end
   -- load package table
-  local pkg = {}
-  pkg.table = dofile(calldir.."/../Project.lua")
+  local pkg = dofile(calldir.."/../Project.lua")
   local dep = {}
   --check if dep is listed as such in the Project.lua file
   dep.name = depname
-  dep.version = pkg.table.deps[dep.name]
+  dep.version = pkg.deps[dep.name]
   if dep.version==nil then
-    error("Error: package "..dep.name.." is not listed as a dependency in Project.lua.\n\n")
+    print("Error: package "..dep.name.." is not listed as a dependency in Project.lua.")
+    os.exit(1)
   end
-  local found = false
-  for _,path in pairs{"dev", "packages"} do --directories in .terra to look for package
-    if Proj.ispkg(Proj.terrahome.."/"..path.."/"..dep.name) then
-      found = true
-      dep.req = path.."."..dep.name..".src."..dep.name
-      break
-    end
+  local id = packageid(dep.name, dep.version)
+  local specs = buildlist[id]
+  if specs==nil then
+    print("Error: package"..dep.name.." version "..dep.version.." is not listed in the buildlist. Please regenerate buildlist.")
+    os.exit(1)
   end
-  if not found then
-    error("Error: package dependency "..dep.name.." could not be located. Please register it to a package registry. \n\n")
-  end
+  --add to path variable
+  package.path = package.path .. "; "..Proj.terrahome.."/"..specs.path.."/src/?.lua"
+  Base.serialize(package.path, 1)
   --load dependency
-  return require(dep.req)
+  return require("src."..depname)
 end
 
 --check if table is a valid project table

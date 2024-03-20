@@ -46,7 +46,6 @@ local function checkout(specs)
         end
         Cm.throw{cm="git pull", root=root} --get updates from remote - this is buggy
         Cm.throw{cm="git checkout "..specs.sha1, root=root}
-        print("directory exists, checking out "..specs.version)
     else
         print("directory "..root.." does not exists")
     end
@@ -221,11 +220,21 @@ local function saverequirementlist(req, rfile, root)
     io.output(oldout)
 end
 
+local function mark_as_buildlist(t)
+    setmetatable(t, {__isbuildlist = true})
+end
+
+function Pkg.isbuildlist(t)
+    local mt = Base.getcustommetatable(t)
+    return mt.__isbuildlist==true
+end
+
 --fetch buildlist, if it exists
-local function fetchbuildlist(root)
+function Pkg.fetchbuildlist(root)
     local buildlist = {}
     if Cm.isfile(root.."/.cosm/Buildlist.lua") then
         buildlist = dofile(root.."/.cosm/Buildlist.lua")
+        mark_as_buildlist(buildlist)
     end
     return buildlist
 end
@@ -240,7 +249,7 @@ end
 
 --fetch a simplified version of the buildlist, if it exists
 local function fetchsimplebuildlist(root)
-    local buildlist = fetchbuildlist(root)
+    local buildlist = Pkg.fetchbuildlist(root)
     return simplifybuildlist(buildlist)
 end
 
@@ -280,15 +289,6 @@ local function getrawbuildlist(root, recompute_requirments)
         addtobuildlist(list, req, depname, depversion)
     end
     return list
-end
-
-local function mark_as_buildlist(t)
-    setmetatable(t, {__isbuildlist = true})
-end
-
-function Pkg.isbuildlist(t)
-    local mt = Base.getcustommetatable(t)
-    return mt.__isbuildlist==true
 end
 
 local function minimalversionselection(rawbuildlist)
@@ -597,7 +597,7 @@ function Pkg.develop(root, depname)
         os.exit(1)
     end
     --load package using previous build list
-    local buildlist = fetchbuildlist(root)
+    local buildlist = Pkg.fetchbuildlist(root)
     --load specs of current dependency
     local specs = loadspecs(buildlist, depname)
     local dep = {name = depname, version=specs.version}
@@ -616,6 +616,39 @@ function Pkg.develop(root, depname)
     saverequirementlist(minreq, ".cosm/Require.lua", root)
     -- --compute induced build list (without recomputing minimal requirment list)
     Pkg.buildlist(root, false)
+    return dep
+end
+
+function Pkg.free(root, depname)
+    --check if we are inside a package
+    if not Proj.ispkg(root) then
+        print("Current directory is not a valid package.")
+        os.exit(1)
+    end
+    --fetch current build list
+    local buildlist = Pkg.fetchbuildlist(root)
+    --load specs of current dependency
+    local specs = loadspecs(buildlist, depname)
+    --set build flag from "dev" to ""
+    local v = Semver.parse(specs.version)
+    if v.build=="dev" then
+        v.build = nil
+        local dep = {name = depname, version=tostring(v.major)}
+        local registry = {}
+        Pkg.loadpkg(registry, dep, true, "constrained")
+        --also, we don't want that an upgrade in A causes a downgrade in B
+        buildlist = fetchsimplebuildlist(root)
+        addconstraint(buildlist, dep.name, dep.version)
+        --compute requirement list that induces build list we want
+        local pkg = fetchprojecttable(root)
+        local minreq = Pkg.getminimalrequirementlist(pkg, buildlist, false, false)
+        Base.mark_as_general_keys(minreq)
+        Cm.throw{cm="mkdir -p .cosm", root=root} --should not be needed - do it anyway
+        saverequirementlist(minreq, ".cosm/Require.lua", root)
+        --compute induced build list (without recomputing minimal requirment list)
+        Pkg.buildlist(root, false)
+        return dep
+    end
 end
 
 --add a dependency to a project

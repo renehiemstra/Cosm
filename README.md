@@ -117,7 +117,12 @@ Its possible to extend functionality or fix bugs in one of your managed dependen
 ```
 cosm develop <package name>
 ```
-*Open a dependency to a project, but in development mode, which means it checks out a 'git clone' of the latest version of package name in `cosm/dev/<package name>@v<major>` that you can freely develop in. The changes are imediately available in your parent project.*
+*Evaluate in a package root. Open a dependency to a project, but in development mode, which means it checks out a 'git clone' of the latest version of package name in `cosm/dev/<package name>@v<major>` that you can freely develop in. The changes are imediately available in your parent project.*
+
+```
+cosm free <package name>
+```
+*Evaluate in a package root. Close development mode and return to the latest release. If you brought out a new release of your development package, then you can directly start usign them.*
 
 ## downgrade project dependencies
 ```
@@ -125,26 +130,29 @@ cosm downgrade <name> v<version>                    (not implemented)
 ```
 *Evaluate in a package root. Downgrade a project dependency to a new specified or unspecied (newest possible) version.*
 
-## register a project to a registry / remove from registry
-```
-cosm registry add <registry name> <giturl>          (implemented)
-```
-*Register a package to registry (in .cosm/registries). An error is thrown if the current version already exists in the registry. The remote repository of the registry is updated automatically.*
-
-```
-cosm registry rm <registry name> <package name> [--force]                (implemented)
-cosm registry rm <registry name> <package name> v<version> [--force]     (implemented)
-```
-*Remove a version of a package or a package entirely from the registry (in .cosm/registries). The remote repository of the registry is updated automatically.*
-
 ## register a new release of a project
+Its easy to publish new releases of your projects
+```
+cosm release v<version>
+```
+*Evaluate in a package root. Publish a new release to your remote repository with version tag `<version>`. The version number in your project file is updated automatically. The version name needs to adhere to semantic versioning and needs to be greater than the previous version. An error is thrown if the current version already exists in the registry. The remote is updated automatically.*
 ```
 cosm release --patch
 cosm release --minor
 cosm release --major
 ```
-*Evaluate in a package root. Release a package to the registry to which the package has previously been registered (in .cosm/registries) and bump the existing `patch`, `minor`, or `major` version. An error is thrown if the current version already exists in the registry. The package and registry remotes are updated automatically.*
+*Evaluate in a package root. Convenience commands that publish a new `patch`, `minor`, or `major` version. An error is thrown if the current version already exists in the registry. The package and registry remotes are updated automatically.*
+
+## Register a project to a registry
+Once you have published one or more releases to your remote repository, you can add them to a registry as follows
 ```
-cosm release v<version>
+cosm registry add <registry name> v<version tag> <giturl>
 ```
-*Evaluate in a package root. Release a package to the registry to which the package has previously been registered (in .cosm/registries) and change the version number to the one provided. The version name needs to adhere to semantic versioning and needs to be greater than the previous version. An error is thrown if the current version already exists in the registry. The remote is updated automatically.*
+*Can be evaluated anywhere. Register a package version to a registry (in .cosm/registries). An error is thrown if the current version already exists in the registry. The remote repository of the registry is updated automatically.*
+
+## Remove a version or project from a registry
+```
+cosm registry rm <registry name> <package name> [--force]
+cosm registry rm <registry name> <package name> v<version> [--force]
+```
+*Remove a version of a package or a package entirely from the registry (in .cosm/registries). The remote repository of the registry is updated automatically.*
