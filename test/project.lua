@@ -3,7 +3,7 @@ local lu = require "luaunit"
 local Proj = require("src.project")
 
 function testPkgCreate()
-    Proj.create("MyPackage", "tmp")
+    Proj.create("MyPackage", "lua", "tmp")
     lu.assertTrue(Proj.ispkg("tmp/MyPackage"))
     os.execute("rm -rf tmp")
     lu.assertFalse(Proj.ispkg("tmp/MyPackage"))
@@ -11,7 +11,7 @@ function testPkgCreate()
 end
 
 function testReadWriteProjfile()
-  Proj.create("MyPackage", "tmp")
+  Proj.create("MyPackage", "lua", "tmp")
   local table1 = require("tmp.MyPackage.Project")
   lu.assertTrue(Proj.isprojtable(table1))
   Proj.save(table1, "tmpProject.lua", "tmp/MyPackage")

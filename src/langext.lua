@@ -3,7 +3,8 @@ local Cm = require("src.command")
 local Lang = {}
 
 --cosm directory for language functionality
-Lang.langdir = os.getenv("COSM_DEPOT_PATH").."/lang"
+local depot_path = os.getenv("COSM_DEPOT_PATH")
+Lang.langdir =  depot_path.."/lang"
 
 --global replacement of 'old' with 'new' in all files in all
 --subdirectories
@@ -38,6 +39,39 @@ function Lang.project_from_template(templatedir, pkgname, root)
     find_and_replace_expr_in_file_and_dir_names("PkgTemplate", pkgname, Lang.langdir.."/.tmp")
     --make results available and clean-up
     Cm.throw{cm="mv .tmp".." "..root.."/"..pkgname, root=Lang.langdir}
+end
+
+--save `projtable` to a Project.lua file
+function Lang.savebashrc(root)
+    local oldout = io.output()
+    local file = io.open(root.."/.cosm/.bashrc", "w")
+    io.output(file)
+    io.write("# supress depracation warning\n")
+    io.write("export BASH_SILENCE_DEPRECATION_WARNING=1\n\n")
+    io.write("# define cosm prompt\n")
+    io.write("function customp {\n")
+    io.write("    BOLD=\"\\[$(tput bold)\\]\"\n")
+    io.write("    NORMAL=\"\\[$(tput sgr0)\\]\"\n")
+    io.write("    GREEN=\"\\[$(tput setaf 2)\\]\"\n")
+    io.write("    WHITE=\"\\[$(tput setaf 7)\\]\"\n")
+    io.write("    PROMPT=\"\\[cosm>\\]\"\n")
+    io.write("    PS1=\"$BOLD$GREEN$PROMPT$NORMAL$WHITE \"\n")
+    io.write("}\n")
+    io.write("customp\n\n")
+    io.close(file)
+    io.output(oldout)
+end
+
+--save environment variables
+function Lang.savecosmenv(root, paths)
+    local oldout = io.output()
+    local file = io.open(root.."/.cosm/.env", "w")
+    io.output(file)
+    for pathname, pathvalue in pairs(paths) do
+        io.write("export "..pathname.."="..pathvalue.."\n")
+    end
+    io.close(file)
+    io.output(oldout)
 end
 
 return Lang

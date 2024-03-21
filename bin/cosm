@@ -19,8 +19,18 @@ status(){
 }
 
 init(){
+    echo "still ok before"
     checkname $1
+    echo "still after"
     lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
+}
+
+activate(){
+    lua $COSM_DIR/cli/cmd-activate.lua $PWD "${@}"
+    if [ $? -eq 0 ]; then
+        source .cosm/.env
+        bash --rcfile .cosm/.bashrc
+    fi
 }
 
 add(){
@@ -218,7 +228,9 @@ case "$1" in
     
     # Evaluate in parent folder of a new package. Adds a new package with name <name> according to a template (in .cosm/templates) of specified language <language>.
     init)    # cosm init
+        echo "entering init"
         init "${@:2}" 
+        echo "exiting init"
         ;;
 
     # Evaluate in root directory of a package. Add a dependency to a project with <name> and <version>
@@ -263,6 +275,11 @@ case "$1" in
 
     build)
         lua $COSM_DIR/cli/cmd-buildlist.lua $PWD "${@:2}"
+        ;;
+
+    # start interactive mode
+    activate)
+        activate "${@:2}"
         ;;
 
     *) # default

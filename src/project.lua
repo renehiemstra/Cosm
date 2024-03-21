@@ -76,7 +76,7 @@ end
 
 --check if table is a valid project table
 function Proj.isprojtable(table)
-  for k,v in ipairs{name="string", uuid="string", authors="string", version="string", deps="table"} do
+  for k,v in ipairs{name="string", uuid="string", authors="string", language="string", version="string", deps="table"} do
     if not Base.haskeyoftype(table, k, v) then
       return false
     end
@@ -85,7 +85,7 @@ function Proj.isprojtable(table)
 end
 
 --check if the folder at `root` is a valid package
-function Proj.ispkg(root)
+function Proj.ispkg(root, pkg)
   if not Cm.isdir(root) then
     print("Not a valid directory.")
     return false
@@ -94,13 +94,18 @@ function Proj.ispkg(root)
     print("Not a project file")
     return false
   end
-  local pkg = dofile(root.."/Project.lua")
-  return Proj.isprojtable(pkg)
+  local table = dofile(root.."/Project.lua")
+  if Proj.isprojtable(table) then
+    if type(pkg)=="table" then
+      pkg.table = table
+    end
+    return true
+  else
+    return false
+  end
 end
 
-local random = math.random
 -- math.randomseed(1)
-
 function Proj.uuid()
     local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
     return string.gsub(template, '[xy]', function (c) 
@@ -114,10 +119,6 @@ function Proj.save(projtable, projfile, root)
   if not type(projtable) == "table" then
     error("Not a table.\n")
   end
-  if not Proj.ispkg(root) then
-    error("Not a valid project specification.\n")
-  end
-
   --open Project.t and set to stdout
   local oldout = io.output()
   local file = io.open(root.."/"..projfile, "w")
@@ -132,6 +133,8 @@ function Proj.save(projtable, projfile, root)
       io.write(string.format("%q, ", v))
   end
   io.write("}, \n")
+  --write language
+  io.write(string.format("  language = %q,\n",projtable.language))
   --write version
   io.write(string.format("  version = %q,\n",projtable.version))
   --write dependencies
@@ -175,7 +178,7 @@ function Proj.clone(args)
 end
 
 --generate Package.lua
-local function genprojfile(pkgname, root)
+local function genprojfile(pkgname, pkglang, root)
   local pkguuid = Proj.uuid()
   local oldout = io.output() 
   local file = io.open(root.."/Project.lua", "w")
@@ -184,6 +187,7 @@ local function genprojfile(pkgname, root)
   io.write("    name = \""..pkgname.."\",\n")
   io.write("    uuid = \""..pkguuid.."\",\n")
   io.write("    authors = {\""..Git.user.name.."<"..Git.user.email..">".."\"},\n")
+  io.write("    language = \""..pkglang.."\",\n")
   io.write("    version = \"".."0.0.0".."\",\n")
   io.write("    deps = {}\n")
   io.write("}\n")
@@ -193,24 +197,23 @@ local function genprojfile(pkgname, root)
 end
 
 --create a terra pkg template
-function Proj.create(pkgname, root)
+function Proj.create(pkgname, pkglang, root)
   --crete Project.lua file
-  genprojfile(pkgname, root)
-  print("Created Project.lua file")
+  genprojfile(pkgname, pkglang, root)
 end
 
 --create a terra pkg template
-function Proj.createfromtemplate(template, pkgname, root)
+function Proj.createfromtemplate(templatedir, pkgname, root)
+  local pkglang = Cm.parentdirname(templatedir)
   --create a project from a template
-  Lang.project_from_template(template, pkgname, root)
+  Lang.project_from_template(templatedir, pkgname, root)
   --crete Project.lua file
-  genprojfile(pkgname, root.."/"..pkgname)
+  genprojfile(pkgname, pkglang, root.."/"..pkgname)
   --initialize a git version control and commit initial project
-  local commitmessage = "\"<new package> "..pkgname.."\""
+  local commitmessage = "\"<new "..pkglang.." package> "..pkgname.."\""
   Cm.throw{cm="git init", root=root.."/"..pkgname}
   Cm.throw{cm="git add .", root=root.."/"..pkgname}
   Cm.throw{cm="git commit -m "..commitmessage, root=root.."/"..pkgname}
 end
-
 
 return Proj

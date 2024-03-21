@@ -7,7 +7,7 @@ local Conv = {}
 
 function Conv.create_pkg(pkgname, path)
     local root = path.."/"..pkgname
-    Proj.create(pkgname, path)
+    Proj.create(pkgname, "lua", path)
     Cm.throw{cm="gh repo create "..pkgname.." --public"}
     Cm.throw{cm="git remote add origin git@github.com:renehiemstra/"..pkgname..".git", root=root}
     Cm.throw{cm="git push --set-upstream origin main", root=root}

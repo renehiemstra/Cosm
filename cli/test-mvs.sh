@@ -23,7 +23,7 @@ remote_add(){
     # add remote to project
     cd "$DEPOT_PATH/examples/$pkg"
     git remote add origin $DEPOT_PATH/localhub/$pkg &> /dev/null;
-    git add . > /dev/null
+    git add . &> /dev/null;
     git commit -m "<dep> added dependencies" &> /dev/null;
     git push --set-upstream origin main &> /dev/null;
     cd "$cwd"
@@ -48,7 +48,7 @@ runall(){
     # create local registry
     mkdir -p $DEPOT_PATH/localhub/TestRegistry
     cd $DEPOT_PATH/localhub/TestRegistry
-    git init --bare > /dev/null
+    git init --bare &> /dev/null;
     cosm registry init TestRegistry $DEPOT_PATH/localhub/TestRegistry
 
     # root folder in which to create packages
