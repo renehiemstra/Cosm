@@ -62,6 +62,11 @@ cosm registry init <registry name> <giturl>
 *Adds a new package registry with name name (in .cosm/registries) with remote located at giturl. The giturl should point to an empty remote git repository.*
 
 ```
+cosm registry clone <giturl>
+```
+*Adds an existing package registry (in .cosm/registries) with remote located at giturl. The giturl should point to a valid existing package registry.*
+
+```
 cosm registry delete <registry name> [--force]
 ```
 *Remove a registry from .cosm/registries.*
