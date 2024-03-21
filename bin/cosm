@@ -172,6 +172,9 @@ registry(){
             checkname $2
             lua $COSM_DIR/cli/cmd-registry-init.lua "${@:2}"
             ;;
+        clone)
+            lua $COSM_DIR/cli/cmd-registry-clone.lua "${@:2}"
+            ;;
         add)
             checkname $2
             lua $COSM_DIR/cli/cmd-registry-add.lua "${@:2}"
