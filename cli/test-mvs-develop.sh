@@ -5,7 +5,6 @@ DEPOT_PATH=$COSM_DEPOT_PATH
 cleanup_pkg(){
     pkg="$1"
     rm -rf "$DEPOT_PATH/examples/$pkg"
-    rm -rf "$DEPOT_PATH/localhub/$pkg"
 }
 cleanup_reg(){
     reg="$1"
@@ -160,9 +159,9 @@ cleanall(){
     cleanup_pkg E
     cleanup_pkg F
     cleanup_reg TestRegistry
-    rm -rfv "$DEPOT_PATH/clones/*"
-    rm -rfv "$DEPOT_PATH/packages/*"
-    rm -rfv "$DEPOT_PATH/localhub/*"
+    rm -rf $DEPOT_PATH/clones/*
+    rm -rf $DEPOT_PATH/packages/*
+    rm -rf $DEPOT_PATH/localhub/*
 }
 
 # no input arguments - run test and cleanup
