@@ -1,6 +1,7 @@
 package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 
 local Pkg = require("src.pkg")
+local Lang = require("lang.lua.cosm")
 
 local function abort()
     print("Invalid option arguments: use 'cosm dependency rm <name>'.\n")
@@ -14,8 +15,10 @@ end
 --extract command line arguments
 local nargs = #arg
 if nargs==2 then
-    local args = {root=arg[1], dep=arg[2]}
+    local root=arg[1]
+    local args = {root=root, dep=arg[2]}
     Pkg.rm(args)
+    Lang.init(root)
     printstats(args.dep)
 else
     abort()

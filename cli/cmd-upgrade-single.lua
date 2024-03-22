@@ -1,6 +1,7 @@
 package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 
 local Pkg = require("src.pkg")
+local Lang = require("lang.lua.cosm")
 
 local function abort()
     print("Invalid option arguments: use 'cosm upgrade-some'.\n")
@@ -19,6 +20,7 @@ if nargs==3 then
     local latest = (arg[3]=="latest")
     --upgrade package to latest compatible
     local dep = Pkg.upgradesinglepkg(root, pkgname, nil, latest) --upgrade single package
+    Lang.init(root)
     printstats(root, dep.name, dep.version)
 elseif nargs==4 then
     local root = arg[1]
@@ -26,6 +28,7 @@ elseif nargs==4 then
     local version = arg[3]
     --upgrade package to latest compatible
     local dep = Pkg.upgradesinglepkg(root, pkgname, version, false) --upgrade single package
+    Lang.init(root)
     printstats(root, dep.name, dep.version)
 else
     abort()

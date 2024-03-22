@@ -2,6 +2,7 @@ package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 
 local Pkg = require("src.pkg")
 local Semver = require("src.semver")
+local Lang = require("lang.lua.cosm")
 
 local function abort()
     print("ArgumentError: the signature is 'cosm downgrade <package name> --version <version>'. See 'cosm --help'. \n \n")

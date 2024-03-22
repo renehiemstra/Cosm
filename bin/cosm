@@ -19,6 +19,14 @@ checkname(){
     fi
 }
 
+start_cosm_prompt(){
+    if [ "$COSM_PROMPT" == "1" ]; then
+        exit 1
+    fi
+    source .cosm/.env
+    bash --rcfile .cosm/.bashrc
+}
+
 status(){
     lua $COSM_DIR/cli/cmd-status.lua $PWD "${@}"
 }
@@ -31,8 +39,7 @@ init(){
 activate(){
     lua $COSM_DIR/cli/cmd-activate.lua $PWD "${@}"
     if [ $? -eq 0 ]; then
-        source .cosm/.env
-        bash --rcfile .cosm/.bashrc
+        start_cosm_prompt
     fi
 }
 

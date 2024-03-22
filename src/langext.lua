@@ -43,23 +43,9 @@ end
 
 --save `projtable` to a Project.lua file
 function Lang.savebashrc(root)
-    local oldout = io.output()
-    local file = io.open(root.."/.cosm/.bashrc", "w")
-    io.output(file)
-    io.write("# supress depracation warning\n")
-    io.write("export BASH_SILENCE_DEPRECATION_WARNING=1\n\n")
-    io.write("# define cosm prompt\n")
-    io.write("function customp {\n")
-    io.write("    BOLD=\"\\[$(tput bold)\\]\"\n")
-    io.write("    NORMAL=\"\\[$(tput sgr0)\\]\"\n")
-    io.write("    GREEN=\"\\[$(tput setaf 2)\\]\"\n")
-    io.write("    WHITE=\"\\[$(tput setaf 7)\\]\"\n")
-    io.write("    PROMPT=\"\\[cosm>\\]\"\n")
-    io.write("    PS1=\"$BOLD$GREEN$PROMPT$NORMAL$WHITE \"\n")
-    io.write("}\n")
-    io.write("customp\n\n")
-    io.close(file)
-    io.output(oldout)
+    local src = depot_path.."/.cosm/bin/.bashrc"
+    local dest = root.."/.cosm/.bashrc"
+    Cm.throw{cm="cp "..src.." "..dest}
 end
 
 --save environment variables
