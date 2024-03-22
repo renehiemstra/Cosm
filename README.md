@@ -39,7 +39,7 @@ In cosm all of this is encapsulated in a simple set of commands, see below for t
 ```
 cosm status
 ```
-*Gives an overview of a package when evaluated in the root of a package.*
+*Gives an overview of a package when evaluated in the root of a package. Direct dependencies are denoted in bold blue.*
 ```
 cosm registry status <registry name>
 ```
@@ -48,12 +48,26 @@ cosm registry status <registry name>
 ## instantiate a new package
 ```
 cosm init <package name>
+cosm init <package name> --language <language>
 ```
-*Evaluate in root directory of an existing project. A 'Project.lua' file is created for project package name.*
+*Evaluate in root directory of an existing project. A 'Project.lua' file is created for project package name and, optionally, language `<language>`, which defaults to Lua.*
 ```
 cosm init <package name> --template <language/template>
 ```
 *Evaluate in parent folder of a new package. Adds a new package with name package name according to a template (in .cosm/lang). Currently, only a lua and terra template are implemented.*
+
+## Activate a package
+```
+cosm activate
+```
+*An interactive environment is loaded, which initialized all environment variables needed for dependency management. The interactive prompt looks like*
+```
+cosm>
+```
+*You can now run your project, e.g.*
+```
+cosm> lua src/<module name>.lua
+```
 
 ## instantiate a new registry / delete a registry / update a registry
 ```
