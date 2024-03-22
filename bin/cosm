@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # cosm semver number
-VERSION="0.3.0"
+VERSION="0.3.1"
 
 # set environment variables
 COSM_DIR="${COSM_DEPOT_PATH}/.cosm"
