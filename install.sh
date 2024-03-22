@@ -52,12 +52,6 @@ create_depot(){
   # add the depot path variable
   echo "export COSM_DEPOT_PATH=\"${COSM_DEPOT_PATH}\"" >> ${BASH_PROFILE}
   echo "The COSM_DEPOT_PATH variable is set to ${COSM_DEPOT_PATH} and is exported to your profile."
-  # append COSM_DEPOT_PATH to the LUA_PATH and add to your profile
-  if [ -z "${LUA_PATH}" ]; then
-    echo "export LUA_PATH=\"${COSM_DEPOT_PATH}/?.lua;;\"" >> ${BASH_PROFILE}
-  else
-    echo "export LUA_PATH=\"${COSM_DEPOT_PATH}/?.lua;${LUA_PATH}\"" >> ${BASH_PROFILE}
-  fi
 }
 
 # download and install cosm cli

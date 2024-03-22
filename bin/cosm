@@ -1,10 +1,15 @@
 #!/bin/bash
 
 # cosm semver number
-VERSION="0.2.0"
+VERSION="0.3.0"
 
-# load common and commands
+# set environment variables
 COSM_DIR="${COSM_DEPOT_PATH}/.cosm"
+if [ -z "${LUA_PATH}" ]; then
+    export LUA_PATH="${COSM_DEPOT_PATH}/?.lua;;"
+else
+    export LUA_PATH="${COSM_DEPOT_PATH}/?.lua;${LUA_PATH}"
+fi
 
 # check that cosm package or registry name consists of letters only
 checkname(){
@@ -15,7 +20,7 @@ checkname(){
 }
 
 status(){
-    lua $COSM_DIR/cli/cmd-status.lua status
+    lua $COSM_DIR/cli/cmd-status.lua $PWD "${@}"
 }
 
 init(){
@@ -220,7 +225,7 @@ case "$1" in
         ;;
 
     # Gives an overview of a package or registry when evaluated in the root of a package or registry, respectively.
-    status)          # cosm statusd
+    status)
         status
         ;;
     
