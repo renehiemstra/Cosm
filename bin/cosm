@@ -19,9 +19,7 @@ status(){
 }
 
 init(){
-    echo "still ok before"
     checkname $1
-    echo "still after"
     lua $COSM_DIR/cli/cmd-init.lua $PWD "${@}"
 }
 
@@ -228,9 +226,7 @@ case "$1" in
     
     # Evaluate in parent folder of a new package. Adds a new package with name <name> according to a template (in .cosm/templates) of specified language <language>.
     init)    # cosm init
-        echo "entering init"
-        init "${@:2}" 
-        echo "exiting init"
+        init "${@:2}"
         ;;
 
     # Evaluate in root directory of a package. Add a dependency to a project with <name> and <version>

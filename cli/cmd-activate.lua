@@ -1,6 +1,8 @@
 package.path = package.path .. ";"..os.getenv("COSM_DEPOT_PATH").."/.cosm/?.lua"
 
+local Cm = require("src.command")
 local Proj = require("src.project")
+local Pkg = require("src.pkg")
 
 local function abort(message)
     print(message)
@@ -19,6 +21,9 @@ if nargs==1 then
     local pkg = {}
     if Proj.ispkg(root, pkg) then
         local Lang = require("lang."..pkg.table.language..".cosm")
+        if not Cm.isfile(root.."/.cosm/Buildlist.lua") then
+            Pkg.buildlist(root, true)
+        end
         Lang.init(root)
         printstats(root)
     else

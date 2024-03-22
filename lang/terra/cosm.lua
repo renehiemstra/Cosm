@@ -14,23 +14,34 @@ function cosm.init(root)
     --make packages available
     Pkg.makeavailable(buildlist)
     --add package paths to path variable
-    local path=""
+    local luapath=""
+    local terrapath=""
     for id, specs in pairs(buildlist) do
         cosm[id] = specs
-        path = path..cosm.depot_path.."/"..specs.path.."/src/?.t;"
+        if specs.language=="lua" then
+            luapath = luapath..cosm.depot_path.."/"..specs.path.."/src/?.lua;"
+        elseif specs.language=="terra" then
+            terrapath = terrapath..cosm.depot_path.."/"..specs.path.."/src/?.t;"
+        end
     end
-    local terrapath = os.getenv("TERRA_PATH")
-    if terrapath==nil then
-        path = "\""..path..";\""
+    local TERRAPATH = os.getenv("TERRA_PATH")
+    if TERRAPATH==nil then
+        terrapath = "\""..terrapath..";\""
     else
-        path = "\""..path..terrapath.."\""
+        terrapath = "\""..terrapath..TERRAPATH.."\""
+    end
+    local LUAPATH = os.getenv("LUA_PATH")
+    if LUAPATH==nil then
+        luapath = "\""..luapath..";\""
+    else
+        luapath = "\""..luapath..LUAPATH.."\""
     end
     --add a bashrc that sets up the cosm prompt
     if not Cm.isfile(root.."/.cosm/.bashrc") then
         Lang.savebashrc(root)
     end
     -- save local environment variables
-    Lang.savecosmenv(root, {TERRA_PATH=path})
+    Lang.savecosmenv(root, {LUA_PATH=luapath, TERRA_PATH=terrapath})
 end
 
 return cosm

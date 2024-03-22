@@ -162,6 +162,7 @@ local function addtobuildlist(list, req, pkgname, version)
             list[pkgid][tostring(sv)] = {
                 name=specs.name,
                 version=version,
+                language=specs.language,
                 path="dev/"..pkgid,
                 uuid=specs.uuid,
                 url=specs.url
@@ -175,6 +176,7 @@ local function addtobuildlist(list, req, pkgname, version)
             list[pkgid][version] = {
                 name=specs.name,
                 version=specs.version,
+                language=specs.language,
                 path="packages/"..specs.name.."/"..specs.sha1,
                 uuid=specs.uuid,
                 sha1=specs.sha1,
