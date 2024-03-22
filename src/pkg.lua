@@ -4,6 +4,7 @@ local Git = require("src.git")
 local Proj = require("src.project")
 local Reg = require("src.registry")
 local Semver = require("src.semver")
+local Color = require("src.color")
 
 local Pkg = {}
 
@@ -20,18 +21,34 @@ local function isdep(root, pkgname)
     return project.deps[pkgname]
 end
 
+local function firstToUpper(str)
+    return (str:gsub("^%l", string.upper))
+end
+
 --list the project status
 --expects that `root` directory is a valid pkg root
-function Pkg.status()
-    if not Proj.ispkg(".") then
+function Pkg.status(root)
+    local pkg = {}
+    if not Proj.ispkg(root, pkg) then
         error("Current directory is not a valid package.")
     end
-    local project = fetchprojecttable(".")
-    print("Project "..project.name.."v"..project.version.."\n")
-    print("Status `"..Cm.currentworkdir().."Project.lua` \n")
-    for name,version in pairs(project.deps) do
-        print("  "..name.."\t\tv"..version)
+    local project = pkg.table
+    print(Color.fg.BLUE..Color.bold..firstToUpper(project.language).." project "..project.name.." version "..project.version..Color.normal..Color.reset)
+    print("Status `"..Cm.currentworkdir().."/Project.lua`")
+    if Cm.isfile(root.."/.cosm/buildlist.lua") then
+        local buildlist = Pkg.fetchbuildlist(root)
+        print("Dependencies:")
+        local sorted = Base.getsortedkeys(buildlist)
+        for i,key in ipairs(sorted) do
+            local specs = buildlist[key]
+            if project.deps[specs.name]~=nil then
+                print(Color.fg.BLUE..Color.bold.."  "..specs.name.."\t\tv"..specs.version..Color.normal..Color.reset)
+            else
+                print("  "..specs.name.."\t\tv"..specs.version)
+            end
+        end
     end
+    print()
 end
 
 --check out the source code
